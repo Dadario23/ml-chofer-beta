@@ -296,27 +296,21 @@ select.inp{appearance:none}
   <div class="ptitle">Colectas</div>
   <div class="psub" id="col-sub">0 colectas guardadas</div>
 
-  <!-- QR SCANNER AREA -->
-  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:10px;aspect-ratio:1/1;max-height:300px">
+  <!-- OCR SCANNER AREA -->
+  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:10px;aspect-ratio:4/3;max-height:280px">
     <video id="qr-video" style="width:100%;height:100%;object-fit:cover;display:block" playsinline muted></video>
     <!-- scan line animation -->
     <div id="qr-line" style="position:absolute;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
-    <!-- corners -->
-    <div style="position:absolute;inset:0;pointer-events:none">
-      <div style="position:absolute;top:16px;left:16px;width:36px;height:36px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:4px 0 0 0"></div>
-      <div style="position:absolute;top:16px;right:16px;width:36px;height:36px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 4px 0 0"></div>
-      <div style="position:absolute;bottom:16px;left:16px;width:36px;height:36px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 4px"></div>
-      <div style="position:absolute;bottom:16px;right:16px;width:36px;height:36px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 4px 0"></div>
+    <!-- target zone hint -->
+    <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
+      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:8px;width:70%;height:40%;display:flex;align-items:center;justify-content:center">
+        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">CP DE LA ETIQUETA</span>
+      </div>
     </div>
     <!-- status overlay -->
-    <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.7));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
+    <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
     <!-- OCR flash feedback -->
-    <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.18);pointer-events:none;border-radius:18px"></div>
-    <!-- loading/fetching overlay -->
-    <div id="qr-loading" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:10px">
-      <div style="width:36px;height:36px;border:3px solid var(--b2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>
-      <div style="color:var(--t1);font-size:13px;font-weight:700" id="qr-load-msg">Leyendo etiqueta…</div>
-    </div>
+    <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.25);pointer-events:none;border-radius:18px"></div>
   </div>
 
   <!-- counters summary -->
@@ -1302,38 +1296,34 @@ function locToZona(loc){
 }
 
 // ══════════════════════════
-//  QR + OCR SCANNER
+//  OCR SCANNER (CP only)
 // ══════════════════════════
 let _qrStream=null,_qrAnim=null,_qrPending=null,_qrType=null,_mqrType=null;
 let _lastQRId=null,_qrCooldown=false;
 let _ocrWorker=null,_ocrReady=false,_ocrBusy=false;
-let _lastOCRTime=0; // throttle OCR to every 1.5s
+let _lastOCRTime=0;
 
-// CP regex patterns:
-// Flex:      CP: 1903  or  CP:1903
-// Particular: CP B1884  or  CPB1884  or  (CP B1884)
-const RE_FLEX = /\bCP\s*:\s*([A-Z]?\d{4,5})\b/i;
-const RE_PART = /\bCP\s+B(\d{4,5})\b|\(CP\s*B(\d{4,5})\)/i;
-const RE_ANY  = /\bCP[\s:]*B?(\d{4,5})\b/i;
+// Flex:       CP: 1900   or  CP:1900
+// Particular: (CP B1884) or  CP B1884
+const RE_PART = /\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/i;
+const RE_FLEX = /CP\s*:\s*(\d{4,5})/i;
 
 function parseCPFromText(text){
-  // Try Particular first (CP B1884)
+  // Particular first — has letter B
   let m = text.match(RE_PART);
-  if(m){ return { cp: m[1]||m[2], tipo: 'part' }; }
-  // Try Flex (CP: 1903)
+  if(m) return { cp: m[1]||m[2], tipo: 'part' };
+  // Flex — has colon
   m = text.match(RE_FLEX);
-  if(m){ return { cp: m[1], tipo: 'flex' }; }
-  // Fallback — ambiguous
-  m = text.match(RE_ANY);
-  if(m){ return { cp: m[1], tipo: null }; }
+  if(m) return { cp: m[1], tipo: 'flex' };
   return null;
 }
 
 async function initOCR(){
-  if(_ocrWorker||_ocrReady)return;
+  if(_ocrWorker||_ocrReady) return;
+  const status = document.getElementById('qr-status');
   try{
-    const {createWorker}=Tesseract;
-    _ocrWorker=await createWorker('eng',1,{
+    const {createWorker} = Tesseract;
+    _ocrWorker = await createWorker('eng', 1, {
       workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
       langPath:'https://tessdata.projectnaptha.com/4.0.0',
       corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
@@ -1343,143 +1333,113 @@ async function initOCR(){
       tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():. ',
       tessedit_pageseg_mode:'6'
     });
-    _ocrReady=true;
-    document.getElementById('qr-status').textContent='Apuntá al QR o al CP de la etiqueta';
-  }catch(e){
-    console.warn('OCR init failed',e);
-    document.getElementById('qr-status').textContent='Apuntá al código QR del paquete';
+    _ocrReady = true;
+    status.textContent = '📷 Apuntá el CP de la etiqueta';
+  } catch(e){
+    status.textContent = '⚠️ Error al cargar lector de texto';
+    console.warn('OCR init failed', e);
   }
 }
 
 async function startQR(){
-  const video=document.getElementById('qr-video');
-  const line=document.getElementById('qr-line');
-  const status=document.getElementById('qr-status');
-  if(_qrStream)return;
+  const video  = document.getElementById('qr-video');
+  const line   = document.getElementById('qr-line');
+  const status = document.getElementById('qr-status');
+  if(_qrStream) return;
   try{
-    _qrStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
+    _qrStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}
     });
-    video.srcObject=_qrStream;
+    video.srcObject = _qrStream;
     await video.play();
-    line.style.display='block';
-    status.textContent='Cargando lector…';
-    tickQR();
-    initOCR(); // load OCR in background
-  }catch(e){
-    status.textContent='⚠️ Sin acceso a la cámara';
-    console.warn('QR cam error',e);
+    line.style.display = 'block';
+    status.textContent = 'Cargando lector de texto…';
+    tickOCR();
+    initOCR();
+  } catch(e){
+    status.textContent = '⚠️ Sin acceso a la cámara';
+    console.warn('Camera error', e);
   }
 }
 
 function stopQR(){
-  if(_qrStream){_qrStream.getTracks().forEach(t=>t.stop());_qrStream=null;}
-  if(_qrAnim){cancelAnimationFrame(_qrAnim);_qrAnim=null;}
-  const line=document.getElementById('qr-line');
-  if(line)line.style.display='none';
+  if(_qrStream){ _qrStream.getTracks().forEach(t=>t.stop()); _qrStream=null; }
+  if(_qrAnim){ cancelAnimationFrame(_qrAnim); _qrAnim=null; }
+  const line = document.getElementById('qr-line');
+  if(line) line.style.display = 'none';
 }
 
 function flashDetected(){
-  const f=document.getElementById('qr-flash');
-  if(!f)return;
-  f.style.display='block';
-  setTimeout(()=>f.style.display='none',200);
+  const f = document.getElementById('qr-flash');
+  if(!f) return;
+  f.style.display = 'block';
+  setTimeout(()=>f.style.display='none', 250);
 }
 
-function tickQR(){
-  const video=document.getElementById('qr-video');
-  if(!video||video.readyState<2){_qrAnim=requestAnimationFrame(tickQR);return;}
+function tickOCR(){
+  if(!_qrStream){ return; }
+  const video = document.getElementById('qr-video');
+  if(!video || video.readyState < 2){
+    _qrAnim = requestAnimationFrame(tickOCR); return;
+  }
 
-  const canvas=document.createElement('canvas');
-  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-  const ctx=canvas.getContext('2d');
-  ctx.drawImage(video,0,0);
+  const now = Date.now();
+  // OCR every 1.2 seconds, not while busy or cooling down
+  if(_ocrReady && !_ocrBusy && !_qrCooldown && (now - _lastOCRTime) > 1200){
+    _lastOCRTime = now;
+    _ocrBusy = true;
 
-  // ── 1. Try QR code first ──
-  try{
-    if(window.BarcodeDetector){
-      if(!_qrDetector)_qrDetector=new BarcodeDetector({formats:['qr_code']});
-      _qrDetector.detect(canvas).then(codes=>{
-        if(codes.length>0)handleQRRaw(codes[0].rawValue);
-      }).catch(()=>{});
-    } else if(window.jsQR){
-      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code=jsQR(img.data,img.width,img.height);
-      if(code)handleQRRaw(code.data);
-    }
-  }catch(e){}
+    const canvas = document.createElement('canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
 
-  // ── 2. OCR fallback — throttled to every 1.5s ──
-  const now=Date.now();
-  if(_ocrReady&&!_ocrBusy&&!_qrCooldown&&(now-_lastOCRTime)>1500){
-    _lastOCRTime=now;
-    _ocrBusy=true;
-    // crop center 60% of frame for speed
-    const cw=Math.floor(canvas.width*.6),ch=Math.floor(canvas.height*.6);
-    const cx=Math.floor(canvas.width*.2),cy=Math.floor(canvas.height*.2);
-    const crop=document.createElement('canvas');
-    crop.width=cw;crop.height=ch;
-    crop.getContext('2d').drawImage(canvas,cx,cy,cw,ch,0,0,cw,ch);
-    _ocrWorker.recognize(crop).then(({data:{text}})=>{
-      _ocrBusy=false;
-      if(_qrCooldown)return;
-      const result=parseCPFromText(text.toUpperCase());
-      if(result&&result.cp){
-        handleCPDetected(result.cp,result.tipo);
+    // Crop: center 70% width, middle 50% height — where CP usually is
+    const cw = Math.floor(canvas.width  * .70);
+    const ch = Math.floor(canvas.height * .50);
+    const cx = Math.floor(canvas.width  * .15);
+    const cy = Math.floor(canvas.height * .25);
+    const crop = document.createElement('canvas');
+    crop.width = cw; crop.height = ch;
+    // Upscale 2x for better OCR accuracy
+    const out = document.createElement('canvas');
+    out.width = cw*2; out.height = ch*2;
+    out.getContext('2d').drawImage(canvas, cx, cy, cw, ch, 0, 0, cw*2, ch*2);
+
+    _ocrWorker.recognize(out).then(({data:{text}})=>{
+      _ocrBusy = false;
+      if(_qrCooldown) return;
+      const result = parseCPFromText(text.toUpperCase());
+      if(result && result.cp){
+        const zona = cpToZona(result.cp);
+        if(zona) handleCPDetected(result.cp, result.tipo, zona);
       }
-    }).catch(()=>{_ocrBusy=false;});
+    }).catch(()=>{ _ocrBusy = false; });
   }
 
-  _qrAnim=requestAnimationFrame(tickQR);
+  _qrAnim = requestAnimationFrame(tickOCR);
 }
 
-async function handleQRRaw(raw){
-  if(_qrCooldown)return;
-  let data;
-  try{data=JSON.parse(raw)}catch(e){return;}
-  const id=data.id;
-  if(!id)return;
-  if(_lastQRId===id)return;
-  _lastQRId=id;
-  _qrCooldown=true;
+function handleCPDetected(cp, tipo, zona){
+  if(_qrCooldown) return;
+  _qrCooldown = true;
   flashDetected();
   playTap();
-  // Detect type from QR: Flex has numeric long id + sender_id
-  const isFlex=data.sender_id&&String(id).length>8;
-  _qrPending={id,tipo:isFlex?'flex':'part',zona:'',cp:'',loc:'',isFlex};
-  showQRManual(id, isFlex?'flex':'part');
-}
-
-function handleCPDetected(cp, tipoInferido){
-  if(_qrCooldown)return;
-  const zona=cpToZona(cp);
-  if(!zona)return; // CP not recognized, keep scanning
-  _qrCooldown=true;
-  flashDetected();
-  playTap();
-  const id='OCR-'+cp+'-'+Date.now();
-  _qrPending={id,tipo:tipoInferido||'flex',zona,cp,loc:'',isFlex:tipoInferido==='flex'};
-
-  if(tipoInferido){
-    // Type inferred confidently — register directly, no modal
-    registerPackage(_qrPending.tipo, zona, cp, id);
-  } else {
-    // Ambiguous format — ask once
-    showQRManual(id, 'flex', cp, zona);
-  }
+  // Both patterns are unambiguous — register directly, no modal
+  registerPackage(tipo, zona, cp, 'OCR-'+cp+'-'+Date.now());
 }
 
 function registerPackage(tipo, zona, cp, id){
-  const key=tipo==='flex'?'cf':'cp';
-  S.today[key][zona]=(S.today[key][zona]||0)+1;
-  if(!S.today.pkgs)S.today.pkgs=[];
-  S.today.pkgs.push({id,tipo,zona,dir:'',cp,loc:'',hora:tnow()});
-  S.lct=Date.now();S.lcz=zona;
-  if(_ctm)clearInterval(_ctm);
-  _ctm=setInterval(rColectas,1000);
-  const tipoLabel=tipo==='flex'?'Flex':'Particular';
+  const key = tipo==='flex' ? 'cf' : 'cp';
+  S.today[key][zona] = (S.today[key][zona]||0) + 1;
+  if(!S.today.pkgs) S.today.pkgs = [];
+  S.today.pkgs.push({id, tipo, zona, dir:'', cp, loc:'', hora:tnow()});
+  S.lct = Date.now(); S.lcz = zona;
+  if(_ctm) clearInterval(_ctm);
+  _ctm = setInterval(rColectas, 1000);
+  const tipoLabel = tipo==='flex' ? '📦 Flex' : '🏠 Particular';
   toast(`✅ ${tipoLabel} · CP ${cp} → ${ZL[zona]}`);
-  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},2000);
+  setTimeout(()=>{ _qrCooldown=false; _lastQRId=null; }, 2500);
   rAll();
 }
 
