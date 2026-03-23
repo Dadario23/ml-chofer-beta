@@ -1443,7 +1443,7 @@ function parseLabel(text){
   const up = text.toUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-  // Detect tipo by CP format
+  // ── Detect tipo by CP format ──
   let cp=null, tipo=null;
   let m = up.match(/\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/);
   if(m){ cp=m[1]||m[2]; tipo='part'; }
@@ -1452,15 +1452,32 @@ function parseLabel(text){
     if(m){ cp=m[1]; tipo='flex'; }
   }
 
-  // Extract first locality: look for known loc names in text
+  // ── Extract unique package ID ──
+  // Flex:       "Envio: 46675704647"  or  "ENVIO 46675704647"
+  // Particular: "> YKG135"            or  "YKG135"  or  "Pack ID: 200001209..."
+  let pkgId = null;
+  // Flex envio number (9+ digits)
+  let mi = up.match(/ENVIO[:\s]+(\d{9,})/);
+  if(mi) pkgId = mi[1];
+  // Particular alpha-numeric short ID like YKG135 or > YKG135
+  if(!pkgId){
+    mi = up.match(/>\s*([A-Z]{2,4}\d{2,6})\b/);
+    if(mi) pkgId = mi[1];
+  }
+  // Pack ID fallback
+  if(!pkgId){
+    mi = up.match(/PACK\s*ID[:\s]+(\d{10,})/);
+    if(mi) pkgId = mi[1];
+  }
+
+  // ── Extract first locality ──
   let loc=null;
-  // Build sorted list (longer first to avoid partial matches)
   const locs = Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
   for(const l of locs){
     if(up.includes(l)){ loc=l; break; }
   }
 
-  return {cp, tipo, loc};
+  return {cp, tipo, loc, pkgId};
 }
 
 // ══════════════════════════
@@ -1613,47 +1630,63 @@ function tickOCR(){
   _qrAnim=requestAnimationFrame(tickOCR);
 }
 
-function handleLabelDetected({cp, tipo, loc}){
+function isDuplicate(pkgId){
+  if(!pkgId) return false;
+  if(!S.today.pkgs) return false;
+  return S.today.pkgs.some(p=>p.pkgId&&p.pkgId===pkgId);
+}
+
+function showDuplicate(pkgId){
+  const prev=S.today.pkgs.find(p=>p.pkgId===pkgId);
+  const info=prev?`${prev.tipo==='flex'?'📦 Flex':'🏠 Particular'} · ${prev.loc||prev.cp||''} · ${ZL[prev.zona]} · ${prev.hora}`:'';
+  // vibrate differently — 3 short pulses
+  try{if(navigator.vibrate)navigator.vibrate([40,20,40,20,40]);}catch(e){}
+  toast(`🚫 Ya colectado${info?' — '+info:''}`);
+  setTimeout(()=>{_qrCooldown=false;},3000);
+}
+
+function handleLabelDetected({cp, tipo, loc, pkgId}){
   if(_qrCooldown)return;
 
   const comercio=S.comercioActual||'';
   const zonaByLoc = loc ? getZonaForLoc(loc, comercio) : null;
   const zonaByCP  = cp  ? getZonaForCP(cp, comercio)   : null;
 
-  // Need at least one signal
   if(!zonaByLoc&&!zonaByCP) return;
+  if(!tipo) return;
+
+  // ── Duplicate check ──
+  if(pkgId && isDuplicate(pkgId)){
+    _qrCooldown=true;
+    showDuplicate(pkgId);
+    return;
+  }
 
   // If only one signal available
   if(!zonaByLoc && zonaByCP){
-    // No loc detected, use CP. If no tipo from CP format, can't determine — skip
-    if(!tipo) return;
     _qrCooldown=true;
     flashDetected();vibrate();
-    registerPackage(tipo, zonaByCP, cp||'', loc||'', 'OCR-'+Date.now());
+    registerPackage(tipo, zonaByCP, cp||'', loc||'', pkgId);
     return;
   }
   if(!zonaByCP && zonaByLoc){
-    if(!tipo) return;
     _qrCooldown=true;
     flashDetected();vibrate();
-    registerPackage(tipo, zonaByLoc, cp||'', loc||'', 'OCR-'+Date.now());
+    registerPackage(tipo, zonaByLoc, cp||'', loc||'', pkgId);
     return;
   }
 
   // Both signals present
   if(zonaByLoc===zonaByCP){
-    // ✅ They agree — register immediately
-    if(!tipo) return;
     _qrCooldown=true;
     flashDetected();vibrate();
-    registerPackage(tipo, zonaByLoc, cp, loc, 'OCR-'+Date.now());
+    registerPackage(tipo, zonaByLoc, cp, loc, pkgId);
   } else {
-    // ⚠️ Mismatch — localidad wins but warn user
-    if(!tipo) return;
+    // ⚠️ Mismatch — localidad wins, warn user
     _qrCooldown=true;
     flashDetected();
     _mismatchPending={tipo, zona:zonaByLoc, cp, loc,
-      zonaCP:zonaByCP, id:'OCR-'+Date.now()};
+      zonaCP:zonaByCP, pkgId, id:'OCR-'+Date.now()};
     showMismatch(loc, cp, zonaByLoc, zonaByCP);
   }
 }
@@ -1676,17 +1709,19 @@ function showMismatch(loc, cp, zonaLoc, zonaCP){
 function confirmMismatch(){
   closeM('m-mismatch');
   if(!_mismatchPending) return;
-  const {tipo,zona,cp,loc,id}=_mismatchPending;
+  const {tipo,zona,cp,loc,pkgId}=_mismatchPending;
   vibrate();
-  registerPackage(tipo, zona, cp, loc, id);
+  registerPackage(tipo, zona, cp, loc, pkgId);
   _mismatchPending=null;
 }
 
-function registerPackage(tipo, zona, cp, loc, id){
+function registerPackage(tipo, zona, cp, loc, pkgId){
   const key=tipo==='flex'?'cf':'cp';
   S.today[key][zona]=(S.today[key][zona]||0)+1;
   if(!S.today.pkgs)S.today.pkgs=[];
-  S.today.pkgs.push({id,tipo,zona,dir:'',cp,loc,hora:tnow(),comercio:S.comercioActual||''});
+  // Use pkgId if available, otherwise generate one
+  const id=pkgId||('OCR-'+Date.now());
+  S.today.pkgs.push({id,pkgId:pkgId||null,tipo,zona,dir:'',cp,loc,hora:tnow(),comercio:S.comercioActual||''});
   S.lct=Date.now();S.lcz=zona;
   if(_ctm)clearInterval(_ctm);
   _ctm=setInterval(rColectas,1000);
