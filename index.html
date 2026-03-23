@@ -192,6 +192,11 @@ select.inp{appearance:none}
 .qz-cell{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px 8px;text-align:center}
 .qz-v{font-family:'Archivo Black',sans-serif;font-size:26px;line-height:1;margin-top:4px}
 .qr-sel{border-color:var(--gold)!important;color:var(--gold);background:rgba(245,200,66,.07)!important}
+/* ══ PKG LIST (swipe to delete) ══ */
+.pkg-item{position:relative;overflow:hidden;border-radius:12px;margin-bottom:6px;background:var(--s1);border:1px solid var(--b1)}
+.pkg-item-inner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s1);border-radius:12px;transition:transform .2s ease;position:relative;z-index:1}
+.pkg-delete-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:#ef4444;display:flex;align-items:center;justify-content:center;border-radius:0 12px 12px 0}
+.pkg-swiping .pkg-item-inner{transition:none}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 </style>
@@ -328,6 +333,15 @@ select.inp{appearance:none}
   <!-- PARTICULAR en curso -->
   <div class="slabel">🏠 Particular en curso</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-part-grid"></div>
+
+  <!-- PAQUETES ESCANEADOS (swipe to delete) -->
+  <div id="pkg-list-wrap" style="display:none;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="slabel" style="margin:0">📋 Escaneados hoy</div>
+      <div id="pkg-list-count" style="font-size:11px;color:var(--t3)"></div>
+    </div>
+    <div id="pkg-list" style="max-height:260px;overflow-y:auto"></div>
+  </div>
 
   <!-- manual counters (collapsible) -->
   <details style="margin-bottom:10px">
@@ -925,6 +939,96 @@ function rColectas(){
   });
 
   rColHist();
+  rPkgList();
+}
+
+// ── SCANNED PACKAGE LIST with swipe-to-delete ──
+function rPkgList(){
+  const pkgs=S.today.pkgs||[];
+  const wrap=document.getElementById('pkg-list-wrap');
+  const list=document.getElementById('pkg-list');
+  const count=document.getElementById('pkg-list-count');
+  if(!wrap||!list)return;
+  if(!pkgs.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  count.textContent=`${pkgs.length} paquete${pkgs.length!==1?'s':''}`;
+
+  // Show newest first
+  list.innerHTML=[...pkgs].reverse().map((p,ri)=>{
+    const idx=pkgs.length-1-ri;
+    const tipoColor=p.tipo==='flex'?'var(--gold)':'#3b82f6';
+    const tipoIcon=p.tipo==='flex'?'📦':'🏠';
+    const idShort=p.pkgId?String(p.pkgId).slice(-8):'-';
+    return`<div class="pkg-item" id="pkg-${idx}">
+      <div class="pkg-delete-bg">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
+      </div>
+      <div class="pkg-item-inner"
+        ontouchstart="swipeStart(event,${idx})"
+        ontouchmove="swipeMove(event,${idx})"
+        ontouchend="swipeEnd(event,${idx})">
+        <div style="font-size:20px">${tipoIcon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="pill ${ZP[p.zona]}" style="font-size:10px;padding:2px 8px">${ZL[p.zona]}</span>
+            <span style="font-size:11px;font-weight:700;color:${tipoColor}">${p.tipo==='flex'?'FLEX':'PART'}</span>
+          </div>
+          <div style="font-size:12px;color:var(--t2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${p.loc||p.cp||'sin datos'} · <span style="font-family:monospace;font-size:11px">${idShort}</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--t3);flex:none">${p.hora||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Swipe to delete ──
+let _swX=0,_swDx=0,_swIdx=null;
+const SWIPE_THRESHOLD=70;
+
+function swipeStart(e,idx){
+  _swX=e.touches[0].clientX;
+  _swDx=0;
+  _swIdx=idx;
+  const item=document.getElementById('pkg-'+idx);
+  if(item)item.classList.add('pkg-swiping');
+}
+
+function swipeMove(e,idx){
+  if(_swIdx!==idx)return;
+  _swDx=e.touches[0].clientX-_swX;
+  if(_swDx>0)_swDx=0; // only swipe left
+  const inner=document.querySelector(`#pkg-${idx} .pkg-item-inner`);
+  if(inner)inner.style.transform=`translateX(${_swDx}px)`;
+}
+
+function swipeEnd(e,idx){
+  if(_swIdx!==idx)return;
+  const item=document.getElementById('pkg-'+idx);
+  const inner=document.querySelector(`#pkg-${idx} .pkg-item-inner`);
+  if(item)item.classList.remove('pkg-swiping');
+  if(Math.abs(_swDx)>=SWIPE_THRESHOLD){
+    // Animate out then delete
+    if(inner){inner.style.transition='transform .18s ease';inner.style.transform='translateX(-100%)';}
+    setTimeout(()=>deletePkg(idx),180);
+  } else {
+    // Snap back
+    if(inner){inner.style.transition='transform .2s ease';inner.style.transform='translateX(0)';}
+  }
+  _swIdx=null;_swDx=0;
+}
+
+function deletePkg(idx){
+  if(!S.today.pkgs||!S.today.pkgs[idx])return;
+  const p=S.today.pkgs[idx];
+  // Decrement the counter
+  const key=p.tipo==='flex'?'cf':'cp';
+  if(S.today[key][p.zona]>0)S.today[key][p.zona]--;
+  S.today.pkgs.splice(idx,1);
+  vibrate([30]);
+  toast(`🗑️ Paquete eliminado`);
+  rAll();
 }
 
 // ── COLECTA HISTORY (new detailed format) ──
