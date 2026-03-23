@@ -1443,41 +1443,56 @@ function parseLabel(text){
   const up = text.toUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-  // ── Detect tipo by CP format ──
+  // ── Detect CP and tipo ──
+  // Order matters: most specific first
   let cp=null, tipo=null;
-  let m = up.match(/\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/);
+
+  // Particular format 1: (CP B1890) or CP B1890
+  let m = up.match(/\(CP\s*B(\d{4,5})\)|(?<![A-Z])CP\s+B(\d{4,5})/);
   if(m){ cp=m[1]||m[2]; tipo='part'; }
-  else {
+
+  // Particular format 2: address followed by (1888) — 4-digit number in parens, no CP prefix
+  // e.g. "Sidney 1424 (1888)" — must NOT already have CP detected
+  if(!cp){
+    // Match (NNNN) where NNNN is 4-5 digits starting with 1 (Argentine CP range)
+    // Avoid matching house numbers like (7241) which are 4 digits too —
+    // we look for the pattern after a space/comma and before end of address line
+    const cpParens = [...up.matchAll(/\(([1-9]\d{3,4})\)/g)];
+    for(const pm of cpParens){
+      const n=parseInt(pm[1]);
+      // Valid Argentine postal codes: 1000-9999
+      if(n>=1000&&n<=9999){ cp=pm[1]; tipo='part'; break; }
+    }
+  }
+
+  // Flex format: CP: 1900 or CP:1900
+  if(!cp){
     m = up.match(/CP\s*:\s*(\d{4,5})/);
     if(m){ cp=m[1]; tipo='flex'; }
   }
 
   // ── Extract unique package ID ──
-  // Flex:       "Envio: 46675704647"  or  "ENVIO 46675704647"
-  // Particular: "> YKG135"            or  "YKG135"  or  "Pack ID: 200001209..."
-  let pkgId = null;
-  // Flex envio number (9+ digits)
+  let pkgId=null;
+  // Flex: "Envio: 46675704647"
   let mi = up.match(/ENVIO[:\s]+(\d{9,})/);
-  if(mi) pkgId = mi[1];
-  // Particular alpha-numeric short ID like YKG135 or > YKG135
+  if(mi) pkgId=mi[1];
+  // Particular: "> UWE767" or "> SRS553" — letter(s) + digits after ">"
   if(!pkgId){
-    mi = up.match(/>\s*([A-Z]{2,4}\d{2,6})\b/);
-    if(mi) pkgId = mi[1];
+    mi = up.match(/>\s*([A-Z]{2,4}\d{2,6})(?:\s|$)/);
+    if(mi) pkgId=mi[1];
   }
   // Pack ID fallback
   if(!pkgId){
     mi = up.match(/PACK\s*ID[:\s]+(\d{10,})/);
-    if(mi) pkgId = mi[1];
+    if(mi) pkgId=mi[1];
   }
 
   // ── Extract first locality ──
   let loc=null;
-  const locs = Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
-  for(const l of locs){
-    if(up.includes(l)){ loc=l; break; }
-  }
+  const locs=Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
+  for(const l of locs){ if(up.includes(l)){ loc=l; break; } }
 
-  return {cp, tipo, loc, pkgId};
+  return{cp, tipo, loc, pkgId};
 }
 
 // ══════════════════════════
@@ -1680,27 +1695,6 @@ function handleQR(raw){
 }
 
 // ── Parse label text for CP, locality ──
-function parseLabel(text){
-  const up=text.toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-
-  // CP format → tipo
-  let cp=null,tipo=null;
-  let m=up.match(/\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/);
-  if(m){cp=m[1]||m[2];tipo='part';}
-  else{
-    m=up.match(/CP\s*:\s*(\d{4,5})/);
-    if(m){cp=m[1];tipo='flex';}
-  }
-
-  // First locality
-  let loc=null;
-  const locs=Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
-  for(const l of locs){if(up.includes(l)){loc=l;break;}}
-
-  return{cp,tipo,loc};
-}
-
 // ── Duplicate helpers ──
 function isDuplicate(pkgId){
   if(!pkgId||!S.today.pkgs) return false;
