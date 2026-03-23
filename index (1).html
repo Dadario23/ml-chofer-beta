@@ -293,41 +293,47 @@ select.inp{appearance:none}
 
 <!-- ████ COLECTAS ████ -->
 <div id="s-col" class="scr">
-  <div class="ptitle">Colectas</div>
-  <div class="psub" id="col-sub">0 colectas guardadas</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+    <div>
+      <div class="ptitle">Colectas</div>
+      <div class="psub" id="col-sub">0 colectas guardadas</div>
+    </div>
+    <div id="col-comercio-badge" onclick="openComercio()" style="cursor:pointer;text-align:right">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">Comercio</div>
+      <div id="col-comercio-name" style="font-size:13px;font-weight:700;color:var(--gold)">— Seleccionar —</div>
+    </div>
+  </div>
 
   <!-- OCR SCANNER AREA -->
-  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:10px;aspect-ratio:4/3;max-height:280px">
+  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:10px;aspect-ratio:4/3;max-height:260px">
     <video id="qr-video" style="width:100%;height:100%;object-fit:cover;display:block" playsinline muted></video>
-    <!-- scan line animation -->
     <div id="qr-line" style="position:absolute;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
-    <!-- target zone hint -->
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
-      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:8px;width:70%;height:40%;display:flex;align-items:center;justify-content:center">
-        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">CP DE LA ETIQUETA</span>
+      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:8px;width:72%;height:38%;display:flex;align-items:center;justify-content:center">
+        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">APUNTÁ AL CP</span>
       </div>
     </div>
-    <!-- status overlay -->
     <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
-    <!-- OCR flash feedback -->
     <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.25);pointer-events:none;border-radius:18px"></div>
   </div>
 
-  <!-- counters summary -->
+  <!-- TOTALES EN CURSO -->
   <div class="col-big" id="col-big">0</div>
   <div class="col-last" id="col-last"><span style="color:var(--t3)">— sin paquetes aún —</span></div>
 
-  <!-- zona breakdown for current colecta -->
-  <div class="card" style="padding:14px 16px;margin-bottom:10px" id="col-zona-card">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--t3);margin-bottom:8px">Paquetes en curso</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="col-zona-grid"></div>
-  </div>
+  <!-- FLEX en curso -->
+  <div class="slabel" style="margin-top:8px">📦 Flex en curso</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-flex-grid"></div>
+
+  <!-- PARTICULAR en curso -->
+  <div class="slabel">🏠 Particular en curso</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-part-grid"></div>
 
   <!-- manual counters (collapsible) -->
   <details style="margin-bottom:10px">
     <summary style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--t3);cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Entrada manual (sin QR)
+      Entrada manual (sin escaneo)
     </summary>
     <div style="padding-top:8px">
       <div class="slabel" style="margin-top:0">FLEX</div>
@@ -557,6 +563,34 @@ select.inp{appearance:none}
   </div>
 </div>
 
+<!-- COMERCIO SELECTOR -->
+<div class="ov" id="m-comercio">
+  <div class="modal">
+    <div class="m-drag"></div>
+    <div class="m-title">🏪 Seleccionar comercio</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px">El comercio define cómo se agrupan las zonas</div>
+    <div id="comercio-list" style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto"></div>
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:6px">Otro comercio</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="inp" id="comercio-custom" placeholder="Nombre del comercio" style="flex:1;text-transform:uppercase">
+        <button class="btn btn-g btn-sm" onclick="saveCustomComercio()">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MISMATCH WARNING -->
+<div class="ov" id="m-mismatch">
+  <div class="modal">
+    <div class="m-drag"></div>
+    <div class="m-title" style="color:#f97316">⚠️ CP y localidad no coinciden</div>
+    <div id="mismatch-body" style="background:var(--s2);border-radius:12px;padding:14px;margin-bottom:18px;font-size:14px;line-height:1.7;color:var(--t2)"></div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:18px">Se usará la <strong style="color:var(--t1)">localidad</strong> para determinar la zona.</div>
+    <button class="btn btn-ok" onclick="confirmMismatch()">Entendido, colectar igual</button>
+  </div>
+</div>
+
 <!-- NE -->
 <div class="ov" id="m-ne">
   <div class="modal">
@@ -660,7 +694,8 @@ let S={
   rates:{...DR},today:freshDay(),
   veh:[],aVeh:null,hist:[],
   eyeOpen:true,snd:true,theme:'dark',
-  lct:null,lcz:null  // last colecta time/zone
+  lct:null,lcz:null,
+  comercioActual:null,customComercio:[]
 };
 let _sm=null,_si='🚚',_sc='blanco';
 let _ctm=null,_tt=null,_atm=null;
@@ -696,6 +731,8 @@ function load(){
     if(d.today&&d.today.iso===todayISO())S.today=d.today;
     if(d.lct)S.lct=d.lct;
     if(d.lcz)S.lcz=d.lcz;
+    if(d.comercioActual)S.comercioActual=d.comercioActual;
+    if(d.customComercio)S.customComercio=d.customComercio;
   }catch(e){}
 }
 
@@ -833,17 +870,31 @@ function rColectas(){
   document.getElementById('col-big').textContent=curCT();
   document.getElementById('col-sub').textContent=`${S.today.cols.length} colecta${S.today.cols.length!==1?'s':''} guardada${S.today.cols.length!==1?'s':''} · ${fmt(gainC())}`;
 
-  // zona breakdown card
-  const grid=document.getElementById('col-zona-grid');
-  if(grid){
-    grid.innerHTML=ZS.map(z=>{
-      const flex=S.today.cf[z]||0;
-      const part=S.today.cp[z]||0;
-      const total=flex+part;
-      return`<div class="qz-cell">
+  // Update comercio badge
+  const cn=document.getElementById('col-comercio-name');
+  if(cn) cn.textContent=S.comercioActual||'— Seleccionar —';
+
+  // Render separated Flex grid
+  const flexGrid=document.getElementById('col-flex-grid');
+  if(flexGrid){
+    const hasAny=ZS.some(z=>(S.today.cf[z]||0)>0);
+    flexGrid.innerHTML=ZS.map(z=>{
+      const v=S.today.cf[z]||0;
+      return`<div class="qz-cell" style="${v>0?'border-color:var(--gold)':''}">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">${ZL[z]}</div>
-        <div class="qz-v" style="color:${total>0?'var(--gold)':'var(--t3)'}">${total}</div>
-        ${total>0?`<div style="font-size:10px;color:var(--t2);margin-top:2px">${flex>0?flex+'F':''} ${part>0?part+'P':''}</div>`:''}
+        <div class="qz-v" style="color:${v>0?'var(--gold)':'var(--t3)'}">${v}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Render separated Particular grid
+  const partGrid=document.getElementById('col-part-grid');
+  if(partGrid){
+    partGrid.innerHTML=ZS.map(z=>{
+      const v=S.today.cp[z]||0;
+      return`<div class="qz-cell" style="${v>0?'border-color:#3b82f6':''}">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">${ZL[z]}</div>
+        <div class="qz-v" style="color:${v>0?'#3b82f6':'var(--t3)'}">${v}</div>
       </div>`;
     }).join('');
   }
@@ -858,10 +909,11 @@ function rColectas(){
     lp.innerHTML=`<span style="color:var(--t3)">— sin paquetes aún —</span>`;
   }
 
-  // FLEX & PARTICULAR counters
+  // Manual counters
   ['flex','part'].forEach(tipo=>{
     const key=tipo==='flex'?'cf':'cp';
-    document.getElementById('col-'+tipo).innerHTML=ZS.map(z=>`
+    const el=document.getElementById('col-'+tipo);
+    if(el) el.innerHTML=ZS.map(z=>`
       <div class="ctr">
         <span class="pill ${ZP[z]}" style="min-width:60px;justify-content:center">${ZL[z]}</span>
         <div class="ctr-v" style="font-size:28px">${S.today[key][z]}</div>
@@ -1296,150 +1348,352 @@ function locToZona(loc){
 }
 
 // ══════════════════════════
-//  OCR SCANNER (CP only)
+//  COMERCIOS & ZONA LOGIC
+// ══════════════════════════
+const COMERCIOS_SAC = ['SAC','FERNO','STI'];
+
+// Localidad → zona ESTANDAR (todos los comercios excepto SAC/FERNO/STI)
+const LOC_ZONA_STD = {
+  // CABA
+  'PALERMO':'caba','BELGRANO':'caba','CABALLITO':'caba','FLORES':'caba',
+  'ALMAGRO':'caba','BALVANERA':'caba','BOEDO':'caba','CHACARITA':'caba',
+  'DEVOTO':'caba','FLORESTA':'caba','LINIERS':'caba','MATADEROS':'caba',
+  'MONSERRAT':'caba','NUEVA POMPEYA':'caba','NUNEZ':'caba',
+  'PARQUE AVELLANEDA':'caba','PARQUE CHACABUCO':'caba','PARQUE PATRICIOS':'caba',
+  'PUERTO MADERO':'caba','RECOLETA':'caba','RETIRO':'caba','SAAVEDRA':'caba',
+  'SAN CRISTOBAL':'caba','SAN NICOLAS':'caba','SAN TELMO':'caba',
+  'VILLA CRESPO':'caba','VILLA DEL PARQUE':'caba','VILLA LUGANO':'caba',
+  'VILLA LURO':'caba','VILLA PUEYRREDON':'caba','VILLA REAL':'caba',
+  'VILLA RIACHUELO':'caba','VILLA SANTA RITA':'caba','VILLA SOLDATI':'caba',
+  'VILLA URQUIZA':'caba','CONSTITUCION':'caba','ONCE':'caba','CONGRESO':'caba',
+  'MICROCENTRO':'caba','CENTRO':'caba','BOCA':'caba','BARRACAS':'caba',
+  'POMPEYA':'caba','LUGANO':'caba','VERSALLES':'caba','MONTE CASTRO':'caba',
+  'VILLA GENERAL MITRE':'caba','VILLA ORTUZAR':'caba',
+  // GBA1
+  'MORON':'gba1','ITUZAINGO':'gba1','TRES DE FEBRERO':'gba1',
+  'HURLINGHAM':'gba1','SAN MARTIN':'gba1','VICENTE LOPEZ':'gba1',
+  'SAN ISIDRO':'gba1','SAN FERNANDO':'gba1','LANUS':'gba1',
+  'AVELLANEDA':'gba1','LOMAS DE ZAMORA':'gba1',
+  // La Matanza Norte → GBA1
+  'RAMOS MEJIA':'gba1','LOMAS DEL MIRADOR':'gba1','LA TABLADA':'gba1',
+  'VILLA MADERO':'gba1','VILLA CELINA':'gba1','TAPIALES':'gba1',
+  'ALDO BONZI':'gba1','SAN JUSTO':'gba1',
+  // GBA2
+  'QUILMES':'gba2','MERLO':'gba2','TIGRE':'gba2',
+  'MALVINAS ARGENTINAS':'gba2','SAN MIGUEL':'gba2','JOSE C PAZ':'gba2',
+  'ESTEBAN ECHEVERRIA':'gba2','EZEIZA':'gba2','MORENO':'gba2',
+  'ALMIRANTE BROWN':'gba2','BERAZATEGUI':'gba2','FLORENCIO VARELA':'gba2',
+  // La Matanza Sur → GBA2
+  'VILLA LUZURIAGA':'gba2','ISIDRO CASANOVA':'gba2','RAFAEL CASTILLO':'gba2',
+  'CIUDAD EVITA':'gba2','GREGORIO DE LAFERRERE':'gba2','LAFERRERE':'gba2',
+  'GONZALEZ CATAN':'gba2','VIRREY DEL PINO':'gba2','20 DE JUNIO':'gba2',
+  // GBA3
+  'PILAR':'gba3','ESCOBAR':'gba3','LA PLATA':'gba3','GUERNICA':'gba3',
+  'CANUELAS':'gba3','MARCOS PAZ':'gba3','NORDELTA':'gba3','DERQUI':'gba3',
+  'MASCHWITZ':'gba3','GARIN':'gba3','DEL VISO':'gba3',
+  'GENERAL RODRIGUEZ':'gba3','LA PLATA CENTRO':'gba3','LA PLATA OESTE':'gba3',
+  'LA PLATA NORTE':'gba3','LA PLATA SUR':'gba3','ENSENADA':'gba3',
+  'BERISSO':'gba3','CAMPANA':'gba3','ZARATE':'gba3',
+};
+
+// Para SAC/FERNO/STI: CABA + Ituzaingó + Tres de Febrero = CABA, resto igual
+const LOC_ZONA_SAC = Object.assign({}, LOC_ZONA_STD, {
+  'ITUZAINGO':'caba',
+  'TRES DE FEBRERO':'caba',
+});
+
+function getZonaForLoc(loc, comercio){
+  const tbl = COMERCIOS_SAC.includes((comercio||'').toUpperCase())
+    ? LOC_ZONA_SAC : LOC_ZONA_STD;
+  const norm = loc.toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim();
+  // exact match first
+  if(tbl[norm]) return tbl[norm];
+  // partial match
+  for(const[k,v] of Object.entries(tbl)){
+    if(norm.includes(k)||k.includes(norm)) return v;
+  }
+  return null;
+}
+
+function getZonaForCP(cp, comercio){
+  const n = parseInt(cp);
+  if(!n) return null;
+  if(n>=1000&&n<=1499) return 'caba';
+  // For SAC/FERNO/STI: Ituzaingó (1714) and Tres de Febrero (1682) → caba
+  if(COMERCIOS_SAC.includes((comercio||'').toUpperCase())){
+    if(n===1714||n===1682||n===1683||n===1684) return 'caba';
+  }
+  // GBA1 ranges
+  const gba1=[[1600,1659],[1660,1699],[1700,1759],[1760,1799],[1800,1884]];
+  for(const[a,b] of gba1) if(n>=a&&n<=b) return 'gba1';
+  // GBA3
+  if(n>=1900&&n<=1999) return 'gba3';
+  // GBA2
+  if(n>=1885&&n<=1899) return 'gba2';
+  return null;
+}
+
+// OCR: extract first locality and CP from label text
+const RE_PART_CP = /\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/i;
+const RE_FLEX_CP = /CP\s*:\s*(\d{4,5})/i;
+
+function parseLabel(text){
+  const up = text.toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  // Detect tipo by CP format
+  let cp=null, tipo=null;
+  let m = up.match(/\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/);
+  if(m){ cp=m[1]||m[2]; tipo='part'; }
+  else {
+    m = up.match(/CP\s*:\s*(\d{4,5})/);
+    if(m){ cp=m[1]; tipo='flex'; }
+  }
+
+  // Extract first locality: look for known loc names in text
+  let loc=null;
+  // Build sorted list (longer first to avoid partial matches)
+  const locs = Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
+  for(const l of locs){
+    if(up.includes(l)){ loc=l; break; }
+  }
+
+  return {cp, tipo, loc};
+}
+
+// ══════════════════════════
+//  COMERCIO STATE
+// ══════════════════════════
+const COMERCIOS_PRESET = [
+  'SAC','FERNO','STI','CENTRO PET','JASS',
+  'SUPER PESCA','LA PAÑALERA','EL REY DEL ENTRETENIMIENTO','VISUAR'
+];
+
+function openComercio(){
+  const list=document.getElementById('comercio-list');
+  const all=[...new Set([...COMERCIOS_PRESET,...(S.customComercio||[])])];
+  list.innerHTML=all.map(c=>`
+    <div onclick="selectComercio('${c}')" style="
+      background:${S.comercioActual===c?'rgba(245,200,66,.1)':'var(--s2)'};
+      border:2px solid ${S.comercioActual===c?'var(--gold)':'var(--b2)'};
+      border-radius:10px;padding:14px 16px;cursor:pointer;
+      display:flex;justify-content:space-between;align-items:center;
+      font-weight:700;font-size:14px;color:${S.comercioActual===c?'var(--gold)':'var(--t1)'}">
+      ${c}
+      ${S.comercioActual===c?'<span style="font-size:18px">★</span>':''}
+    </div>`).join('');
+  openM('m-comercio');
+}
+
+function selectComercio(c){
+  S.comercioActual=c;
+  save();
+  closeM('m-comercio');
+  document.getElementById('col-comercio-name').textContent=c;
+  toast(`🏪 ${c} seleccionado`);
+  rColectas();
+}
+
+function saveCustomComercio(){
+  const v=document.getElementById('comercio-custom').value.trim().toUpperCase();
+  if(!v){toast('⚠️ Escribí el nombre');return;}
+  if(!S.customComercio)S.customComercio=[];
+  if(!S.customComercio.includes(v))S.customComercio.push(v);
+  selectComercio(v);
+  document.getElementById('comercio-custom').value='';
+}
+
+// ══════════════════════════
+//  OCR SCANNER (CP + LOC)
 // ══════════════════════════
 let _qrStream=null,_qrAnim=null,_qrPending=null,_qrType=null,_mqrType=null;
 let _lastQRId=null,_qrCooldown=false;
 let _ocrWorker=null,_ocrReady=false,_ocrBusy=false;
 let _lastOCRTime=0;
-
-// Flex:       CP: 1900   or  CP:1900
-// Particular: (CP B1884) or  CP B1884
-const RE_PART = /\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/i;
-const RE_FLEX = /CP\s*:\s*(\d{4,5})/i;
-
-function parseCPFromText(text){
-  // Particular first — has letter B
-  let m = text.match(RE_PART);
-  if(m) return { cp: m[1]||m[2], tipo: 'part' };
-  // Flex — has colon
-  m = text.match(RE_FLEX);
-  if(m) return { cp: m[1], tipo: 'flex' };
-  return null;
-}
+let _mismatchPending=null;
 
 async function initOCR(){
   if(_ocrWorker||_ocrReady) return;
-  const status = document.getElementById('qr-status');
+  const status=document.getElementById('qr-status');
   try{
-    const {createWorker} = Tesseract;
-    _ocrWorker = await createWorker('eng', 1, {
+    const {createWorker}=Tesseract;
+    _ocrWorker=await createWorker('eng',1,{
       workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
       langPath:'https://tessdata.projectnaptha.com/4.0.0',
       corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
       logger:()=>{}
     });
     await _ocrWorker.setParameters({
-      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():. ',
+      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():./- ',
       tessedit_pageseg_mode:'6'
     });
-    _ocrReady = true;
-    status.textContent = '📷 Apuntá el CP de la etiqueta';
-  } catch(e){
-    status.textContent = '⚠️ Error al cargar lector de texto';
-    console.warn('OCR init failed', e);
+    _ocrReady=true;
+    status.textContent='📷 Apuntá al CP y localidad de la etiqueta';
+  }catch(e){
+    status.textContent='⚠️ Error al cargar lector';
+    console.warn('OCR init failed',e);
   }
 }
 
 async function startQR(){
-  const video  = document.getElementById('qr-video');
-  const line   = document.getElementById('qr-line');
-  const status = document.getElementById('qr-status');
+  // Always ask for comercio first
+  if(!S.comercioActual){ openComercio(); }
+  const video=document.getElementById('qr-video');
+  const line=document.getElementById('qr-line');
+  const status=document.getElementById('qr-status');
   if(_qrStream) return;
   try{
-    _qrStream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}
+    _qrStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
     });
-    video.srcObject = _qrStream;
+    video.srcObject=_qrStream;
     await video.play();
-    line.style.display = 'block';
-    status.textContent = 'Cargando lector de texto…';
+    line.style.display='block';
+    status.textContent='Cargando lector de texto…';
     tickOCR();
     initOCR();
-  } catch(e){
-    status.textContent = '⚠️ Sin acceso a la cámara';
-    console.warn('Camera error', e);
+  }catch(e){
+    status.textContent='⚠️ Sin acceso a la cámara';
   }
 }
 
 function stopQR(){
-  if(_qrStream){ _qrStream.getTracks().forEach(t=>t.stop()); _qrStream=null; }
-  if(_qrAnim){ cancelAnimationFrame(_qrAnim); _qrAnim=null; }
-  const line = document.getElementById('qr-line');
-  if(line) line.style.display = 'none';
+  if(_qrStream){_qrStream.getTracks().forEach(t=>t.stop());_qrStream=null;}
+  if(_qrAnim){cancelAnimationFrame(_qrAnim);_qrAnim=null;}
+  const line=document.getElementById('qr-line');
+  if(line)line.style.display='none';
 }
 
 function flashDetected(){
-  const f = document.getElementById('qr-flash');
-  if(!f) return;
-  f.style.display = 'block';
-  setTimeout(()=>f.style.display='none', 250);
+  const f=document.getElementById('qr-flash');
+  if(!f)return;
+  f.style.display='block';
+  setTimeout(()=>f.style.display='none',300);
+}
+
+function vibrate(){
+  try{if(navigator.vibrate)navigator.vibrate([60,30,60]);}catch(e){}
 }
 
 function tickOCR(){
-  if(!_qrStream){ return; }
-  const video = document.getElementById('qr-video');
-  if(!video || video.readyState < 2){
-    _qrAnim = requestAnimationFrame(tickOCR); return;
-  }
+  if(!_qrStream){return;}
+  const video=document.getElementById('qr-video');
+  if(!video||video.readyState<2){_qrAnim=requestAnimationFrame(tickOCR);return;}
 
-  const now = Date.now();
-  // OCR every 1.2 seconds, not while busy or cooling down
-  if(_ocrReady && !_ocrBusy && !_qrCooldown && (now - _lastOCRTime) > 1200){
-    _lastOCRTime = now;
-    _ocrBusy = true;
+  const now=Date.now();
+  if(_ocrReady&&!_ocrBusy&&!_qrCooldown&&(now-_lastOCRTime)>1200){
+    _lastOCRTime=now;
+    _ocrBusy=true;
 
-    const canvas = document.createElement('canvas');
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    const canvas=document.createElement('canvas');
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    canvas.getContext('2d').drawImage(video,0,0);
 
-    // Crop: center 70% width, middle 50% height — where CP usually is
-    const cw = Math.floor(canvas.width  * .70);
-    const ch = Math.floor(canvas.height * .50);
-    const cx = Math.floor(canvas.width  * .15);
-    const cy = Math.floor(canvas.height * .25);
-    const crop = document.createElement('canvas');
-    crop.width = cw; crop.height = ch;
-    // Upscale 2x for better OCR accuracy
-    const out = document.createElement('canvas');
-    out.width = cw*2; out.height = ch*2;
-    out.getContext('2d').drawImage(canvas, cx, cy, cw, ch, 0, 0, cw*2, ch*2);
+    // Upscale center crop 2x for accuracy
+    const cw=Math.floor(canvas.width*.75);
+    const ch=Math.floor(canvas.height*.65);
+    const cx=Math.floor(canvas.width*.12);
+    const cy=Math.floor(canvas.height*.18);
+    const out=document.createElement('canvas');
+    out.width=cw*2;out.height=ch*2;
+    out.getContext('2d').drawImage(canvas,cx,cy,cw,ch,0,0,cw*2,ch*2);
 
     _ocrWorker.recognize(out).then(({data:{text}})=>{
-      _ocrBusy = false;
-      if(_qrCooldown) return;
-      const result = parseCPFromText(text.toUpperCase());
-      if(result && result.cp){
-        const zona = cpToZona(result.cp);
-        if(zona) handleCPDetected(result.cp, result.tipo, zona);
+      _ocrBusy=false;
+      if(_qrCooldown)return;
+      const result=parseLabel(text);
+      if(result.cp||result.loc){
+        handleLabelDetected(result);
       }
-    }).catch(()=>{ _ocrBusy = false; });
+    }).catch(()=>{_ocrBusy=false;});
+  }
+  _qrAnim=requestAnimationFrame(tickOCR);
+}
+
+function handleLabelDetected({cp, tipo, loc}){
+  if(_qrCooldown)return;
+
+  const comercio=S.comercioActual||'';
+  const zonaByLoc = loc ? getZonaForLoc(loc, comercio) : null;
+  const zonaByCP  = cp  ? getZonaForCP(cp, comercio)   : null;
+
+  // Need at least one signal
+  if(!zonaByLoc&&!zonaByCP) return;
+
+  // If only one signal available
+  if(!zonaByLoc && zonaByCP){
+    // No loc detected, use CP. If no tipo from CP format, can't determine — skip
+    if(!tipo) return;
+    _qrCooldown=true;
+    flashDetected();vibrate();
+    registerPackage(tipo, zonaByCP, cp||'', loc||'', 'OCR-'+Date.now());
+    return;
+  }
+  if(!zonaByCP && zonaByLoc){
+    if(!tipo) return;
+    _qrCooldown=true;
+    flashDetected();vibrate();
+    registerPackage(tipo, zonaByLoc, cp||'', loc||'', 'OCR-'+Date.now());
+    return;
   }
 
-  _qrAnim = requestAnimationFrame(tickOCR);
+  // Both signals present
+  if(zonaByLoc===zonaByCP){
+    // ✅ They agree — register immediately
+    if(!tipo) return;
+    _qrCooldown=true;
+    flashDetected();vibrate();
+    registerPackage(tipo, zonaByLoc, cp, loc, 'OCR-'+Date.now());
+  } else {
+    // ⚠️ Mismatch — localidad wins but warn user
+    if(!tipo) return;
+    _qrCooldown=true;
+    flashDetected();
+    _mismatchPending={tipo, zona:zonaByLoc, cp, loc,
+      zonaCP:zonaByCP, id:'OCR-'+Date.now()};
+    showMismatch(loc, cp, zonaByLoc, zonaByCP);
+  }
 }
 
-function handleCPDetected(cp, tipo, zona){
-  if(_qrCooldown) return;
-  _qrCooldown = true;
-  flashDetected();
-  playTap();
-  // Both patterns are unambiguous — register directly, no modal
-  registerPackage(tipo, zona, cp, 'OCR-'+cp+'-'+Date.now());
+function showMismatch(loc, cp, zonaLoc, zonaCP){
+  document.getElementById('mismatch-body').innerHTML=`
+    <div style="margin-bottom:8px">
+      <span style="color:var(--t3);font-size:12px">Localidad detectada</span><br>
+      <strong style="color:var(--t1);font-size:16px">${loc}</strong>
+      <span class="pill ${ZP[zonaLoc]}" style="margin-left:8px">${ZL[zonaLoc]}</span>
+    </div>
+    <div>
+      <span style="color:var(--t3);font-size:12px">CP detectado</span><br>
+      <strong style="color:var(--t1);font-size:16px">${cp}</strong>
+      <span class="pill ${ZP[zonaCP]}" style="margin-left:8px">${ZL[zonaCP]}</span>
+    </div>`;
+  openM('m-mismatch');
 }
 
-function registerPackage(tipo, zona, cp, id){
-  const key = tipo==='flex' ? 'cf' : 'cp';
-  S.today[key][zona] = (S.today[key][zona]||0) + 1;
-  if(!S.today.pkgs) S.today.pkgs = [];
-  S.today.pkgs.push({id, tipo, zona, dir:'', cp, loc:'', hora:tnow()});
-  S.lct = Date.now(); S.lcz = zona;
-  if(_ctm) clearInterval(_ctm);
-  _ctm = setInterval(rColectas, 1000);
-  const tipoLabel = tipo==='flex' ? '📦 Flex' : '🏠 Particular';
-  toast(`✅ ${tipoLabel} · CP ${cp} → ${ZL[zona]}`);
-  setTimeout(()=>{ _qrCooldown=false; _lastQRId=null; }, 2500);
+function confirmMismatch(){
+  closeM('m-mismatch');
+  if(!_mismatchPending) return;
+  const {tipo,zona,cp,loc,id}=_mismatchPending;
+  vibrate();
+  registerPackage(tipo, zona, cp, loc, id);
+  _mismatchPending=null;
+}
+
+function registerPackage(tipo, zona, cp, loc, id){
+  const key=tipo==='flex'?'cf':'cp';
+  S.today[key][zona]=(S.today[key][zona]||0)+1;
+  if(!S.today.pkgs)S.today.pkgs=[];
+  S.today.pkgs.push({id,tipo,zona,dir:'',cp,loc,hora:tnow(),comercio:S.comercioActual||''});
+  S.lct=Date.now();S.lcz=zona;
+  if(_ctm)clearInterval(_ctm);
+  _ctm=setInterval(rColectas,1000);
+  const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
+  const locLabel=loc||cp||zona;
+  toast(`✅ ${tipoLabel} · ${locLabel} → ${ZL[zona]}`);
+  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},2500);
   rAll();
 }
 
