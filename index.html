@@ -310,7 +310,7 @@ select.inp{appearance:none}
     <div id="qr-line" style="position:absolute;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
       <div style="border:2px dashed rgba(245,200,66,.5);border-radius:8px;width:72%;height:38%;display:flex;align-items:center;justify-content:center">
-        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">APUNTÁ AL CP</span>
+        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">QR → CP DE LA ETIQUETA</span>
       </div>
     </div>
     <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
@@ -1523,13 +1523,267 @@ function saveCustomComercio(){
 }
 
 // ══════════════════════════
-//  OCR SCANNER (CP + LOC)
+//  SCANNER: QR (id) → OCR (zona)
 // ══════════════════════════
 let _qrStream=null,_qrAnim=null,_qrPending=null,_qrType=null,_mqrType=null;
 let _lastQRId=null,_qrCooldown=false;
 let _ocrWorker=null,_ocrReady=false,_ocrBusy=false;
 let _lastOCRTime=0;
 let _mismatchPending=null;
+let _pendingPkgId=null; // ID from QR, waiting for OCR to get zone
+let _qrDetector=null;
+
+async function initOCR(){
+  if(_ocrWorker||_ocrReady) return;
+  try{
+    const {createWorker}=Tesseract;
+    _ocrWorker=await createWorker('eng',1,{
+      workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+      langPath:'https://tessdata.projectnaptha.com/4.0.0',
+      corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
+      logger:()=>{}
+    });
+    await _ocrWorker.setParameters({
+      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():./- ',
+      tessedit_pageseg_mode:'6'
+    });
+    _ocrReady=true;
+    setStatus('📷 Apuntá al QR del paquete');
+  }catch(e){
+    setStatus('⚠️ Error al cargar lector');
+  }
+}
+
+function setStatus(msg){
+  const el=document.getElementById('qr-status');
+  if(el) el.textContent=msg;
+}
+
+async function startQR(){
+  if(!S.comercioActual){ openComercio(); }
+  const video=document.getElementById('qr-video');
+  if(_qrStream) return;
+  try{
+    _qrStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
+    });
+    video.srcObject=_qrStream;
+    await video.play();
+    document.getElementById('qr-line').style.display='block';
+    setStatus('Cargando lector…');
+    tick();
+    initOCR();
+  }catch(e){
+    setStatus('⚠️ Sin acceso a la cámara');
+  }
+}
+
+function stopQR(){
+  if(_qrStream){_qrStream.getTracks().forEach(t=>t.stop());_qrStream=null;}
+  if(_qrAnim){cancelAnimationFrame(_qrAnim);_qrAnim=null;}
+  const line=document.getElementById('qr-line');
+  if(line) line.style.display='none';
+  _pendingPkgId=null;
+}
+
+function flashDetected(color){
+  const f=document.getElementById('qr-flash');
+  if(!f)return;
+  f.style.background=color==='red'?'rgba(239,68,68,.35)':'rgba(245,200,66,.25)';
+  f.style.display='block';
+  setTimeout(()=>f.style.display='none',300);
+}
+
+function vibrate(pattern){
+  try{if(navigator.vibrate)navigator.vibrate(pattern||[60,30,60]);}catch(e){}
+}
+
+// ── Main tick: tries QR every frame, OCR every 1.2s ──
+function tick(){
+  if(!_qrStream){return;}
+  const video=document.getElementById('qr-video');
+  if(!video||video.readyState<2){_qrAnim=requestAnimationFrame(tick);return;}
+
+  const canvas=document.createElement('canvas');
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+
+  // ── STEP 1: Read QR for unique ID ──
+  if(!_qrCooldown){
+    if(window.BarcodeDetector){
+      if(!_qrDetector) _qrDetector=new BarcodeDetector({formats:['qr_code']});
+      _qrDetector.detect(canvas).then(codes=>{
+        if(codes.length>0) handleQR(codes[0].rawValue);
+      }).catch(()=>{});
+    } else if(window.jsQR){
+      const img=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
+      const code=jsQR(img.data,img.width,img.height);
+      if(code) handleQR(code.data);
+    }
+  }
+
+  // ── STEP 2: OCR for CP + locality (only after QR id captured) ──
+  const now=Date.now();
+  if(_pendingPkgId && _ocrReady && !_ocrBusy && (now-_lastOCRTime)>1200){
+    _lastOCRTime=now;
+    _ocrBusy=true;
+    setStatus('🔍 Leyendo dirección…');
+
+    const cw=Math.floor(canvas.width*.75);
+    const ch=Math.floor(canvas.height*.65);
+    const cx=Math.floor(canvas.width*.12);
+    const cy=Math.floor(canvas.height*.18);
+    const out=document.createElement('canvas');
+    out.width=cw*2;out.height=ch*2;
+    out.getContext('2d').drawImage(canvas,cx,cy,cw,ch,0,0,cw*2,ch*2);
+
+    _ocrWorker.recognize(out).then(({data:{text}})=>{
+      _ocrBusy=false;
+      if(!_pendingPkgId)return;
+      const result=parseLabel(text);
+      if(result.cp||result.loc){
+        handleLabelDetected({...result, pkgId:_pendingPkgId});
+      }
+    }).catch(()=>{_ocrBusy=false;});
+  }
+
+  _qrAnim=requestAnimationFrame(tick);
+}
+
+// ── QR handler: extract ID, check duplicate, wait for OCR ──
+function handleQR(raw){
+  if(_qrCooldown||_pendingPkgId) return;
+  let data;
+  try{data=JSON.parse(raw);}catch(e){return;}
+  const id=String(data.id||'');
+  if(!id||id===_lastQRId) return;
+
+  // Duplicate check — block immediately
+  if(isDuplicate(id)){
+    _lastQRId=id;
+    flashDetected('red');
+    vibrate([40,20,40,20,40]);
+    showDuplicate(id);
+    return;
+  }
+
+  // New package — store ID and wait for OCR to get zone
+  _lastQRId=id;
+  _pendingPkgId=id;
+  // Infer tipo from QR structure
+  _pendingTipo = (data.sender_id && id.length>8) ? 'flex' : 'part';
+  flashDetected('gold');
+  playTap();
+  setStatus(`✅ QR leído · Apuntá al CP…`);
+}
+
+// ── Parse label text for CP, locality ──
+function parseLabel(text){
+  const up=text.toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  // CP format → tipo
+  let cp=null,tipo=null;
+  let m=up.match(/\(CP\s*B(\d{4,5})\)|CP\s+B(\d{4,5})/);
+  if(m){cp=m[1]||m[2];tipo='part';}
+  else{
+    m=up.match(/CP\s*:\s*(\d{4,5})/);
+    if(m){cp=m[1];tipo='flex';}
+  }
+
+  // First locality
+  let loc=null;
+  const locs=Object.keys(LOC_ZONA_STD).sort((a,b)=>b.length-a.length);
+  for(const l of locs){if(up.includes(l)){loc=l;break;}}
+
+  return{cp,tipo,loc};
+}
+
+// ── Duplicate helpers ──
+function isDuplicate(pkgId){
+  if(!pkgId||!S.today.pkgs) return false;
+  return S.today.pkgs.some(p=>p.pkgId===pkgId);
+}
+
+function showDuplicate(pkgId){
+  const prev=S.today.pkgs.find(p=>p.pkgId===pkgId);
+  const info=prev?` · ${prev.tipo==='flex'?'Flex':'Particular'} · ${ZL[prev.zona]} · ${prev.hora}`:'';
+  toast(`🚫 Paquete ya colectado${info}`);
+  setTimeout(()=>{_lastQRId=null;},4000);
+}
+
+// ── Label detected: resolve zone and register ──
+function handleLabelDetected({cp,tipo,loc,pkgId}){
+  if(!pkgId) return;
+
+  // tipo from OCR takes priority over QR inference, fallback to QR
+  const tipoFinal = tipo || _pendingTipo || 'flex';
+  const comercio=S.comercioActual||'';
+  const zonaByLoc=loc?getZonaForLoc(loc,comercio):null;
+  const zonaByCP=cp?getZonaForCP(cp,comercio):null;
+
+  if(!zonaByLoc&&!zonaByCP){
+    setStatus('📷 Apuntá al CP de la etiqueta');
+    return; // keep scanning
+  }
+
+  _pendingPkgId=null; // clear pending
+  _qrCooldown=true;
+
+  if(!zonaByLoc&&zonaByCP){
+    flashDetected('gold');vibrate();
+    registerPackage(tipoFinal,zonaByCP,cp||'',loc||'',pkgId);
+  } else if(!zonaByCP&&zonaByLoc){
+    flashDetected('gold');vibrate();
+    registerPackage(tipoFinal,zonaByLoc,cp||'',loc||'',pkgId);
+  } else if(zonaByLoc===zonaByCP){
+    flashDetected('gold');vibrate();
+    registerPackage(tipoFinal,zonaByLoc,cp,loc,pkgId);
+  } else {
+    // Mismatch — warn, localidad wins
+    _mismatchPending={tipo:tipoFinal,zona:zonaByLoc,cp,loc,zonaCP:zonaByCP,pkgId};
+    showMismatch(loc,cp,zonaByLoc,zonaByCP);
+  }
+}
+
+function showMismatch(loc,cp,zonaLoc,zonaCP){
+  document.getElementById('mismatch-body').innerHTML=`
+    <div style="margin-bottom:8px">
+      <span style="color:var(--t3);font-size:12px">Localidad detectada</span><br>
+      <strong style="color:var(--t1);font-size:16px">${loc}</strong>
+      <span class="pill ${ZP[zonaLoc]}" style="margin-left:8px">${ZL[zonaLoc]}</span>
+    </div>
+    <div>
+      <span style="color:var(--t3);font-size:12px">CP detectado</span><br>
+      <strong style="color:var(--t1);font-size:16px">${cp}</strong>
+      <span class="pill ${ZP[zonaCP]}" style="margin-left:8px">${ZL[zonaCP]}</span>
+    </div>`;
+  openM('m-mismatch');
+}
+
+function confirmMismatch(){
+  closeM('m-mismatch');
+  if(!_mismatchPending)return;
+  const{tipo,zona,cp,loc,pkgId}=_mismatchPending;
+  vibrate();
+  registerPackage(tipo,zona,cp,loc,pkgId);
+  _mismatchPending=null;
+}
+
+function registerPackage(tipo,zona,cp,loc,pkgId){
+  const key=tipo==='flex'?'cf':'cp';
+  S.today[key][zona]=(S.today[key][zona]||0)+1;
+  if(!S.today.pkgs)S.today.pkgs=[];
+  S.today.pkgs.push({pkgId,tipo,zona,cp,loc,hora:tnow(),comercio:S.comercioActual||''});
+  S.lct=Date.now();S.lcz=zona;
+  if(_ctm)clearInterval(_ctm);
+  _ctm=setInterval(rColectas,1000);
+  const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
+  toast(`✅ ${tipoLabel} · ${loc||cp||zona} → ${ZL[zona]}`);
+  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;_pendingTipo=null;},2500);
+  rAll();
+}
 
 async function initOCR(){
   if(_ocrWorker||_ocrReady) return;
@@ -1730,147 +1984,6 @@ function registerPackage(tipo, zona, cp, loc, pkgId){
   toast(`✅ ${tipoLabel} · ${locLabel} → ${ZL[zona]}`);
   setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},2500);
   rAll();
-}
-
-function showQRLoading(msg){
-  const el=document.getElementById('qr-loading');
-  document.getElementById('qr-load-msg').textContent=msg;
-  el.style.display='flex';
-}
-function hideQRLoading(){
-  document.getElementById('qr-loading').style.display='none';
-}
-
-function showQRConfirm(){
-  const p=_qrPending;
-  _qrType=p.tipo;
-  const zl=ZL[p.zona];
-  const zpc=ZP[p.zona];
-  document.getElementById('qr-det-body').innerHTML=`
-    <div style="background:var(--s2);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">ID envío</span>
-        <span style="font-size:13px;font-weight:700;color:var(--t1)">${p.id}</span>
-      </div>
-      ${p.dir?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">Dirección</span><span style="font-size:13px;color:var(--t1);text-align:right;max-width:200px">${p.dir}</span></div>`:''}
-      ${p.cp?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">CP</span><span style="font-size:13px;color:var(--t1)">${p.cp}</span></div>`:''}
-      ${p.loc?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">Localidad</span><span style="font-size:13px;color:var(--t1)">${p.loc}</span></div>`:''}
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">Zona</span>
-        <span class="pill ${zpc}">${zl}</span>
-      </div>
-    </div>`;
-  // pre-select tipo
-  pickQRType(p.tipo);
-  openM('m-qr');
-}
-
-function showQRManual(id, tipoDefault, cpPrefill, zonaPrefill){
-  document.getElementById('qr-manual-id').textContent=`ID: ${id}`;
-  const cpInput=document.getElementById('mqr-cp');
-  cpInput.value=cpPrefill||'';
-  _mqrType=tipoDefault;
-
-  // If we already have zona from OCR prefill, show it
-  const preview=document.getElementById('mqr-zona-preview');
-  const pill=document.getElementById('mqr-zona-pill');
-  const btn=document.getElementById('mqr-confirm-btn');
-  if(zonaPrefill){
-    pill.className=`pill ${ZP[zonaPrefill]}`;
-    pill.textContent=ZL[zonaPrefill];
-    preview.style.display='block';
-    btn.style.opacity='1';btn.style.pointerEvents='auto';
-    _qrPending.zona=zonaPrefill;
-  } else {
-    preview.style.display='none';
-    btn.style.opacity='0.35';btn.style.pointerEvents='none';
-  }
-
-  // reset tipo buttons
-  ['flex','part'].forEach(tp=>{
-    const el=document.getElementById(`mqr-${tp}-btn`);
-    el.style.borderColor=tp===tipoDefault?'var(--gold)':'var(--b2)';
-    el.style.color=tp===tipoDefault?'var(--gold)':'var(--t1)';
-    el.style.background=tp===tipoDefault?'rgba(245,200,66,.07)':'var(--s2)';
-  });
-  openM('m-qr-manual');
-  setTimeout(()=>{ if(!cpPrefill) cpInput.focus(); },300);
-}
-
-function onCPInput(val){
-  const zona=cpToZona(val);
-  const preview=document.getElementById('mqr-zona-preview');
-  const pill=document.getElementById('mqr-zona-pill');
-  const btn=document.getElementById('mqr-confirm-btn');
-  if(zona){
-    pill.className=`pill ${ZP[zona]}`;
-    pill.textContent=ZL[zona];
-    preview.style.display='block';
-    btn.classList.remove('btn-off');
-    btn.style.opacity='1';
-    btn.style.pointerEvents='auto';
-    _qrPending.zona=zona;
-    _qrPending.cp=val;
-  } else {
-    preview.style.display='none';
-    btn.style.opacity='0.35';
-    btn.style.pointerEvents='none';
-  }
-}
-
-function pickQRType(t){
-  _qrType=t;
-  const fb=document.getElementById('qr-flex-btn');
-  const pb=document.getElementById('qr-part-btn');
-  fb.style.borderColor=t==='flex'?'var(--gold)':'var(--b2)';
-  fb.style.color=t==='flex'?'var(--gold)':'var(--t1)';
-  fb.style.background=t==='flex'?'rgba(245,200,66,.07)':'var(--s2)';
-  pb.style.borderColor=t==='part'?'var(--gold)':'var(--b2)';
-  pb.style.color=t==='part'?'var(--gold)':'var(--t1)';
-  pb.style.background=t==='part'?'rgba(245,200,66,.07)':'var(--s2)';
-}
-
-function pickMQRType(t){
-  _mqrType=t;
-  ['flex','part'].forEach(tp=>{
-    const el=document.getElementById(`mqr-${tp}-btn`);
-    el.style.borderColor=tp===t?'var(--gold)':'var(--b2)';
-    el.style.color=tp===t?'var(--gold)':'var(--t1)';
-    el.style.background=tp===t?'rgba(245,200,66,.07)':'var(--s2)';
-  });
-}
-
-function confirmQR(){
-  if(!_qrType){toast('⚠️ Elegí Flex o Particular');return;}
-  const p=_qrPending;
-  const key=_qrType==='flex'?'cf':'cp';
-  S.today[key][p.zona]=(S.today[key][p.zona]||0)+1;
-  // save package detail
-  if(!S.today.pkgs)S.today.pkgs=[];
-  S.today.pkgs.push({id:p.id,tipo:_qrType,zona:p.zona,dir:p.dir,cp:p.cp,loc:p.loc,hora:tnow()});
-  S.lct=Date.now();S.lcz=p.zona;
-  if(_ctm)clearInterval(_ctm);
-  _ctm=setInterval(rColectas,1000);
-  playTap();
-  closeM('m-qr');
-  toast(`✅ ${p.loc||p.id} → ${ZL[p.zona]}`);
-  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},1500);
-  rAll();
-}
-
-function confirmManualQR(){
-  const zona=_qrPending?.zona;
-  if(!zona){toast('⚠️ Ingresá el código postal');return;}
-  const tipo=_mqrType||'flex';
-  const id=_qrPending?.id||'manual';
-  const cp=_qrPending?.cp||document.getElementById('mqr-cp').value||'';
-  closeM('m-qr-manual');
-  registerPackage(tipo, zona, cp, id);
-}
-
-function cancelQR(){
-  closeM('m-qr');closeM('m-qr-manual');
-  _qrCooldown=false;_lastQRId=null;_qrPending=null;
 }
 
 // ══════════════════════════
