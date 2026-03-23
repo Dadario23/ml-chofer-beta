@@ -10,6 +10,7 @@
 <title>ML Chofer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 /* ══ TOKENS ══ */
 :root,[data-theme="dark"]{
@@ -309,10 +310,12 @@ select.inp{appearance:none}
     </div>
     <!-- status overlay -->
     <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.7));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
+    <!-- OCR flash feedback -->
+    <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.18);pointer-events:none;border-radius:18px"></div>
     <!-- loading/fetching overlay -->
     <div id="qr-loading" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:10px">
       <div style="width:36px;height:36px;border:3px solid var(--b2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>
-      <div style="color:var(--t1);font-size:13px;font-weight:700" id="qr-load-msg">Consultando ML…</div>
+      <div style="color:var(--t1);font-size:13px;font-weight:700" id="qr-load-msg">Leyendo etiqueta…</div>
     </div>
   </div>
 
@@ -1299,16 +1302,60 @@ function locToZona(loc){
 }
 
 // ══════════════════════════
-//  QR SCANNER
+//  QR + OCR SCANNER
 // ══════════════════════════
 let _qrStream=null,_qrAnim=null,_qrPending=null,_qrType=null,_mqrType=null;
 let _lastQRId=null,_qrCooldown=false;
+let _ocrWorker=null,_ocrReady=false,_ocrBusy=false;
+let _lastOCRTime=0; // throttle OCR to every 1.5s
+
+// CP regex patterns:
+// Flex:      CP: 1903  or  CP:1903
+// Particular: CP B1884  or  CPB1884  or  (CP B1884)
+const RE_FLEX = /\bCP\s*:\s*([A-Z]?\d{4,5})\b/i;
+const RE_PART = /\bCP\s+B(\d{4,5})\b|\(CP\s*B(\d{4,5})\)/i;
+const RE_ANY  = /\bCP[\s:]*B?(\d{4,5})\b/i;
+
+function parseCPFromText(text){
+  // Try Particular first (CP B1884)
+  let m = text.match(RE_PART);
+  if(m){ return { cp: m[1]||m[2], tipo: 'part' }; }
+  // Try Flex (CP: 1903)
+  m = text.match(RE_FLEX);
+  if(m){ return { cp: m[1], tipo: 'flex' }; }
+  // Fallback — ambiguous
+  m = text.match(RE_ANY);
+  if(m){ return { cp: m[1], tipo: null }; }
+  return null;
+}
+
+async function initOCR(){
+  if(_ocrWorker||_ocrReady)return;
+  try{
+    const {createWorker}=Tesseract;
+    _ocrWorker=await createWorker('eng',1,{
+      workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+      langPath:'https://tessdata.projectnaptha.com/4.0.0',
+      corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
+      logger:()=>{}
+    });
+    await _ocrWorker.setParameters({
+      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():. ',
+      tessedit_pageseg_mode:'6'
+    });
+    _ocrReady=true;
+    document.getElementById('qr-status').textContent='Apuntá al QR o al CP de la etiqueta';
+  }catch(e){
+    console.warn('OCR init failed',e);
+    document.getElementById('qr-status').textContent='Apuntá al código QR del paquete';
+  }
+}
 
 async function startQR(){
   const video=document.getElementById('qr-video');
   const line=document.getElementById('qr-line');
   const status=document.getElementById('qr-status');
-  if(_qrStream)return; // already running
+  if(_qrStream)return;
   try{
     _qrStream=await navigator.mediaDevices.getUserMedia({
       video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
@@ -1316,8 +1363,9 @@ async function startQR(){
     video.srcObject=_qrStream;
     await video.play();
     line.style.display='block';
-    status.textContent='Apuntá al código QR del paquete';
+    status.textContent='Cargando lector…';
     tickQR();
+    initOCR(); // load OCR in background
   }catch(e){
     status.textContent='⚠️ Sin acceso a la cámara';
     console.warn('QR cam error',e);
@@ -1331,51 +1379,108 @@ function stopQR(){
   if(line)line.style.display='none';
 }
 
+function flashDetected(){
+  const f=document.getElementById('qr-flash');
+  if(!f)return;
+  f.style.display='block';
+  setTimeout(()=>f.style.display='none',200);
+}
+
 function tickQR(){
   const video=document.getElementById('qr-video');
   if(!video||video.readyState<2){_qrAnim=requestAnimationFrame(tickQR);return;}
+
   const canvas=document.createElement('canvas');
   canvas.width=video.videoWidth;canvas.height=video.videoHeight;
   const ctx=canvas.getContext('2d');
   ctx.drawImage(video,0,0);
+
+  // ── 1. Try QR code first ──
   try{
     if(window.BarcodeDetector){
-      // native API (Chrome Android)
       if(!_qrDetector)_qrDetector=new BarcodeDetector({formats:['qr_code']});
       _qrDetector.detect(canvas).then(codes=>{
         if(codes.length>0)handleQRRaw(codes[0].rawValue);
       }).catch(()=>{});
-    } else {
-      // fallback: jsQR library loaded lazily
-      if(window.jsQR){
-        const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-        const code=jsQR(img.data,img.width,img.height);
-        if(code)handleQRRaw(code.data);
-      }
+    } else if(window.jsQR){
+      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code=jsQR(img.data,img.width,img.height);
+      if(code)handleQRRaw(code.data);
     }
   }catch(e){}
+
+  // ── 2. OCR fallback — throttled to every 1.5s ──
+  const now=Date.now();
+  if(_ocrReady&&!_ocrBusy&&!_qrCooldown&&(now-_lastOCRTime)>1500){
+    _lastOCRTime=now;
+    _ocrBusy=true;
+    // crop center 60% of frame for speed
+    const cw=Math.floor(canvas.width*.6),ch=Math.floor(canvas.height*.6);
+    const cx=Math.floor(canvas.width*.2),cy=Math.floor(canvas.height*.2);
+    const crop=document.createElement('canvas');
+    crop.width=cw;crop.height=ch;
+    crop.getContext('2d').drawImage(canvas,cx,cy,cw,ch,0,0,cw,ch);
+    _ocrWorker.recognize(crop).then(({data:{text}})=>{
+      _ocrBusy=false;
+      if(_qrCooldown)return;
+      const result=parseCPFromText(text.toUpperCase());
+      if(result&&result.cp){
+        handleCPDetected(result.cp,result.tipo);
+      }
+    }).catch(()=>{_ocrBusy=false;});
+  }
+
   _qrAnim=requestAnimationFrame(tickQR);
 }
 
 async function handleQRRaw(raw){
   if(_qrCooldown)return;
   let data;
-  try{data=JSON.parse(raw)}catch(e){
-    toast('⚠️ QR no reconocido');_qrCooldown=true;setTimeout(()=>_qrCooldown=false,3000);return;
-  }
+  try{data=JSON.parse(raw)}catch(e){return;}
   const id=data.id;
   if(!id)return;
   if(_lastQRId===id)return;
   _lastQRId=id;
   _qrCooldown=true;
+  flashDetected();
   playTap();
-
-  // Detect type: Flex has numeric long id + sender_id
+  // Detect type from QR: Flex has numeric long id + sender_id
   const isFlex=data.sender_id&&String(id).length>8;
-  const tipoDefault=isFlex?'flex':'part';
+  _qrPending={id,tipo:isFlex?'flex':'part',zona:'',cp:'',loc:'',isFlex};
+  showQRManual(id, isFlex?'flex':'part');
+}
 
-  _qrPending={id,tipo:tipoDefault,zona:'',dir:'',cp:'',loc:'',isFlex};
-  showQRManual(id,tipoDefault);
+function handleCPDetected(cp, tipoInferido){
+  if(_qrCooldown)return;
+  const zona=cpToZona(cp);
+  if(!zona)return; // CP not recognized, keep scanning
+  _qrCooldown=true;
+  flashDetected();
+  playTap();
+  const id='OCR-'+cp+'-'+Date.now();
+  _qrPending={id,tipo:tipoInferido||'flex',zona,cp,loc:'',isFlex:tipoInferido==='flex'};
+
+  if(tipoInferido){
+    // Type inferred confidently — register directly, no modal
+    registerPackage(_qrPending.tipo, zona, cp, id);
+  } else {
+    // Ambiguous format — ask once
+    showQRManual(id, 'flex', cp, zona);
+  }
+}
+
+function registerPackage(tipo, zona, cp, id){
+  const key=tipo==='flex'?'cf':'cp';
+  S.today[key][zona]=(S.today[key][zona]||0)+1;
+  if(!S.today.pkgs)S.today.pkgs=[];
+  S.today.pkgs.push({id,tipo,zona,dir:'',cp,loc:'',hora:tnow()});
+  S.lct=Date.now();S.lcz=zona;
+  if(_ctm)clearInterval(_ctm);
+  _ctm=setInterval(rColectas,1000);
+  const tipoLabel=tipo==='flex'?'Flex':'Particular';
+  toast(`✅ ${tipoLabel} · CP ${cp} → ${ZL[zona]}`);
+  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},2000);
+  rAll();
 }
 
 function showQRLoading(msg){
@@ -1411,11 +1516,27 @@ function showQRConfirm(){
   openM('m-qr');
 }
 
-function showQRManual(id,tipoDefault){
+function showQRManual(id, tipoDefault, cpPrefill, zonaPrefill){
   document.getElementById('qr-manual-id').textContent=`ID: ${id}`;
-  document.getElementById('mqr-cp').value='';
-  document.getElementById('mqr-zona-preview').style.display='none';
+  const cpInput=document.getElementById('mqr-cp');
+  cpInput.value=cpPrefill||'';
   _mqrType=tipoDefault;
+
+  // If we already have zona from OCR prefill, show it
+  const preview=document.getElementById('mqr-zona-preview');
+  const pill=document.getElementById('mqr-zona-pill');
+  const btn=document.getElementById('mqr-confirm-btn');
+  if(zonaPrefill){
+    pill.className=`pill ${ZP[zonaPrefill]}`;
+    pill.textContent=ZL[zonaPrefill];
+    preview.style.display='block';
+    btn.style.opacity='1';btn.style.pointerEvents='auto';
+    _qrPending.zona=zonaPrefill;
+  } else {
+    preview.style.display='none';
+    btn.style.opacity='0.35';btn.style.pointerEvents='none';
+  }
+
   // reset tipo buttons
   ['flex','part'].forEach(tp=>{
     const el=document.getElementById(`mqr-${tp}-btn`);
@@ -1424,8 +1545,7 @@ function showQRManual(id,tipoDefault){
     el.style.background=tp===tipoDefault?'rgba(245,200,66,.07)':'var(--s2)';
   });
   openM('m-qr-manual');
-  // focus CP input after modal opens
-  setTimeout(()=>document.getElementById('mqr-cp').focus(),300);
+  setTimeout(()=>{ if(!cpPrefill) cpInput.focus(); },300);
 }
 
 function onCPInput(val){
@@ -1494,19 +1614,9 @@ function confirmManualQR(){
   if(!zona){toast('⚠️ Ingresá el código postal');return;}
   const tipo=_mqrType||'flex';
   const id=_qrPending?.id||'manual';
-  const cp=_qrPending?.cp||'';
-  const key=tipo==='flex'?'cf':'cp';
-  S.today[key][zona]=(S.today[key][zona]||0)+1;
-  if(!S.today.pkgs)S.today.pkgs=[];
-  S.today.pkgs.push({id,tipo,zona,dir:'',cp,loc:'',hora:tnow()});
-  S.lct=Date.now();S.lcz=zona;
-  if(_ctm)clearInterval(_ctm);
-  _ctm=setInterval(rColectas,1000);
-  playTap();
+  const cp=_qrPending?.cp||document.getElementById('mqr-cp').value||'';
   closeM('m-qr-manual');
-  toast(`✅ CP ${cp} → ${ZL[zona]}`);
-  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},1500);
-  rAll();
+  registerPackage(tipo, zona, cp, id);
 }
 
 function cancelQR(){
