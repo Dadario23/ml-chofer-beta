@@ -192,6 +192,9 @@ select.inp{appearance:none}
 .qz-cell{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px 8px;text-align:center}
 .qz-v{font-family:'Archivo Black',sans-serif;font-size:26px;line-height:1;margin-top:4px}
 .qr-sel{border-color:var(--gold)!important;color:var(--gold);background:rgba(245,200,66,.07)!important}
+/* ══ ZONA BUTTONS ══ */
+.zona-btn{border:none;border-radius:16px;padding:20px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent;width:100%}
+.zona-btn:active{transform:scale(.93);filter:brightness(.8)}
 /* ══ PKG LIST (swipe to delete) ══ */
 .pkg-item{position:relative;overflow:hidden;border-radius:12px;margin-bottom:6px;background:var(--s1);border:1px solid var(--b1)}
 .pkg-item-inner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s1);border-radius:12px;transition:transform .2s ease;position:relative;z-index:1}
@@ -297,78 +300,98 @@ select.inp{appearance:none}
 </div>
 
 <!-- ████ COLECTAS ████ -->
-<div id="s-col" class="scr">
+<div id="s-col" class="scr" style="padding:0;max-width:none;position:relative;min-height:calc(100vh - 76px)">
 
-  <!-- HEADER -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-    <div>
-      <div class="ptitle">Colectas</div>
-      <div class="psub" id="col-sub">0 colectas guardadas</div>
-    </div>
-    <div id="col-comercio-badge" onclick="openComercio()" style="cursor:pointer;text-align:right">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">Comercio</div>
-      <div id="col-comercio-name" style="font-size:13px;font-weight:700;color:var(--gold)">— Seleccionar —</div>
-    </div>
-  </div>
-
-  <!-- SCANNER -->
-  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:14px;aspect-ratio:4/3;max-height:240px">
+  <!-- FULLSCREEN CAMERA -->
+  <div id="qr-wrap" style="position:relative;width:100%;height:calc(100vh - 76px);background:#000;overflow:hidden">
     <video id="qr-video" style="width:100%;height:100%;object-fit:cover;display:block" playsinline muted></video>
-    <div id="qr-line" style="position:absolute;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
+    <div id="qr-line" style="position:absolute;left:15%;right:15%;height:2px;background:var(--gold);box-shadow:0 0 10px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
+
+    <!-- QR target box -->
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
-      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:10px;width:55%;height:55%;"></div>
-    </div>
-    <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.8));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
-    <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.25);pointer-events:none;border-radius:18px"></div>
-  </div>
-
-  <!-- TOTALES -->
-  <div class="col-big" id="col-big">0</div>
-  <div class="col-last" id="col-last"><span style="color:var(--t3)">— sin paquetes aún —</span></div>
-
-  <!-- FLEX en curso -->
-  <div class="slabel" style="margin-top:8px">📦 Flex</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-flex-grid"></div>
-
-  <!-- PARTICULAR en curso -->
-  <div class="slabel">🏠 Particular</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="col-part-grid"></div>
-
-  <!-- REGISTRAR COLECTA -->
-  <button class="btn btn-ok" onclick="regColecta()" style="margin-bottom:14px">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
-    Registrar colecta
-  </button>
-
-  <!-- HISTORIAL COLECTAS DEL DIA -->
-  <div id="col-hist"></div>
-
-  <!-- SHEET: paquetes escaneados (deslizar hacia arriba) -->
-  <div id="pkg-sheet-backdrop" onclick="closePkgSheet()" style="display:none;position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.5)"></div>
-  <div id="pkg-sheet" style="
-    position:fixed;bottom:0;left:0;right:0;z-index:295;
-    background:var(--bg2);border:1px solid var(--b1);
-    border-radius:22px 22px 0 0;
-    max-height:75vh;
-    transform:translateY(calc(100% - 60px));
-    transition:transform .3s cubic-bezier(.22,.61,.36,1);
-    max-width:480px;margin:0 auto;
-  ">
-    <!-- drag handle + title row -->
-    <div id="pkg-sheet-handle"
-      style="padding:10px 18px 0;cursor:pointer"
-      ontouchstart="sheetTouchStart(event)"
-      ontouchmove="sheetTouchMove(event)"
-      ontouchend="sheetTouchEnd(event)"
-      onclick="togglePkgSheet()">
-      <div style="width:40px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 10px"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--b1)">
-        <div style="font-family:'Archivo Black',sans-serif;font-size:16px">📋 Escaneados hoy</div>
-        <div id="pkg-sheet-count" style="font-size:12px;font-weight:700;color:var(--t3)">0 paquetes</div>
+      <div style="position:relative;width:220px;height:220px">
+        <!-- corners -->
+        <div style="position:absolute;top:0;left:0;width:40px;height:40px;border-top:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:4px 0 0 0"></div>
+        <div style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 4px 0 0"></div>
+        <div style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:0 0 0 4px"></div>
+        <div style="position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 0 4px 0"></div>
       </div>
     </div>
-    <!-- list -->
-    <div id="pkg-list" style="overflow-y:auto;max-height:calc(75vh - 80px);padding:10px 18px 24px"></div>
+
+    <!-- TOP BAR: header + status -->
+    <div style="position:absolute;top:0;left:0;right:0;padding:14px 16px 10px;background:linear-gradient(rgba(0,0,0,.75),transparent)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:#fff;letter-spacing:-.3px">Colectas</div>
+          <div id="col-sub" style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px">0 colectas guardadas</div>
+        </div>
+        <div onclick="openComercio()" style="cursor:pointer;text-align:right;background:rgba(0,0,0,.45);border-radius:10px;padding:7px 12px;border:1px solid rgba(255,255,255,.15)">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5)">Comercio</div>
+          <div id="col-comercio-name" style="font-size:12px;font-weight:700;color:var(--gold)">— Seleccionar —</div>
+        </div>
+      </div>
+      <!-- status -->
+      <div id="qr-status" style="margin-top:10px;text-align:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.5px">Iniciando cámara…</div>
+    </div>
+
+    <!-- TURBO MODE toggle -->
+    <div id="turbo-wrap" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);display:none">
+      <div onclick="toggleTurbo()" id="turbo-btn" style="background:rgba(0,0,0,.6);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7)">
+        <span id="turbo-icon">⚡</span>
+        <span id="turbo-label">TURBO OFF</span>
+      </div>
+    </div>
+
+    <!-- BOTTOM OVERLAY: counters + actions -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.88) 30%);padding:0 14px 18px">
+
+      <!-- TOTAL BIG -->
+      <div style="text-align:center;margin-bottom:6px">
+        <div class="col-big" id="col-big" style="font-size:72px;margin:0;text-shadow:0 0 40px rgba(245,200,66,.4)">0</div>
+        <div class="col-last" id="col-last" style="margin-bottom:0"><span style="color:rgba(255,255,255,.4)">— sin paquetes aún —</span></div>
+      </div>
+
+      <!-- FLEX + PARTICULAR mini grids -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(245,200,66,.3);border-radius:12px;padding:8px 10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);margin-bottom:5px">📦 Flex</div>
+          <div id="col-flex-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px"></div>
+        </div>
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:8px 10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:5px">🏠 Part.</div>
+          <div id="col-part-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px"></div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS ROW -->
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ok" onclick="regColecta()" style="flex:1;padding:12px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+          Registrar colecta
+        </button>
+        <button onclick="togglePkgList()" id="pkg-toggle-btn" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 14px;cursor:pointer;color:#fff;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;-webkit-tap-highlight-color:transparent">
+          <span style="font-size:18px">📋</span>
+          <span id="pkg-toggle-count">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- flash feedback -->
+    <div id="qr-flash" style="display:none;position:absolute;inset:0;pointer-events:none"></div>
+  </div>
+
+  <!-- COLLAPSIBLE PKG LIST (inside scroll, below camera) -->
+  <div id="pkg-list-section" style="display:none;background:var(--bg2);border-top:1px solid var(--b1);padding:14px 14px 8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-family:'Archivo Black',sans-serif;font-size:16px">📋 Escaneados hoy</div>
+      <button onclick="togglePkgList()" style="background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--t2);cursor:pointer">Cerrar ✕</button>
+    </div>
+    <div id="pkg-list"></div>
+  </div>
+
+  <!-- COLECTA HISTORY -->
+  <div id="col-hist-wrap" style="background:var(--bg);padding:0 14px 8px">
+    <div id="col-hist"></div>
   </div>
 
 </div>
@@ -590,51 +613,43 @@ select.inp{appearance:none}
 <div class="ov" id="m-zona">
   <div class="modal" style="padding-bottom:max(28px,env(safe-area-inset-bottom))">
     <div class="m-drag"></div>
-    <div style="text-align:center;margin-bottom:6px">
-      <div id="zona-pkg-tipo" style="font-size:13px;font-weight:700;color:var(--t2)"></div>
+    <div style="text-align:center;margin-bottom:8px">
+      <div id="zona-pkg-tipo" style="font-size:14px;font-weight:700"></div>
       <div id="zona-pkg-id" style="font-family:monospace;font-size:11px;color:var(--t3);margin-top:2px"></div>
     </div>
-    <div class="m-title" style="text-align:center;margin-bottom:18px">¿A qué zona pertenece?</div>
+
+    <!-- BULTOS counter -->
+    <div id="zona-bultos-row" style="display:none;background:var(--s2);border-radius:12px;padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px">
+      <div style="flex:1;font-size:13px;font-weight:700;color:var(--t2)">Bultos detectados:</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="adjBultos(-1)" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--s3);color:var(--t2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+        <div id="zona-bultos-n" style="font-family:'Archivo Black',sans-serif;font-size:28px;min-width:32px;text-align:center">1</div>
+        <button onclick="adjBultos(1)" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--gold);color:#000;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+      </div>
+    </div>
+
+    <div style="font-family:'Archivo Black',sans-serif;font-size:18px;text-align:center;margin-bottom:14px;color:var(--t1)">¿A qué zona pertenece?</div>
+
     <!-- 4 big zone buttons -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <button onclick="pickZona('caba')" style="
-        background:#f5c842;color:#000;border:none;border-radius:16px;
-        padding:22px 10px;cursor:pointer;
-        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
-        display:flex;flex-direction:column;align-items:center;gap:6px;
-        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
-        CABA
-        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Capital</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button onclick="pickZona('caba')" class="zona-btn" style="background:#f5c842;color:#000">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:28px">CABA</span>
+        <span style="font-size:10px;font-weight:700;opacity:.65;letter-spacing:1px">Capital</span>
       </button>
-      <button onclick="pickZona('gba1')" style="
-        background:#22c55e;color:#000;border:none;border-radius:16px;
-        padding:22px 10px;cursor:pointer;
-        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
-        display:flex;flex-direction:column;align-items:center;gap:6px;
-        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
-        GBA 1
-        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 1</span>
+      <button onclick="pickZona('gba1')" class="zona-btn" style="background:#22c55e;color:#000">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:28px">GBA 1</span>
+        <span style="font-size:10px;font-weight:700;opacity:.65;letter-spacing:1px">Zona 1</span>
       </button>
-      <button onclick="pickZona('gba2')" style="
-        background:#f97316;color:#000;border:none;border-radius:16px;
-        padding:22px 10px;cursor:pointer;
-        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
-        display:flex;flex-direction:column;align-items:center;gap:6px;
-        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
-        GBA 2
-        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 2</span>
+      <button onclick="pickZona('gba2')" class="zona-btn" style="background:#f97316;color:#000">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:28px">GBA 2</span>
+        <span style="font-size:10px;font-weight:700;opacity:.65;letter-spacing:1px">Zona 2</span>
       </button>
-      <button onclick="pickZona('gba3')" style="
-        background:#ef4444;color:#fff;border:none;border-radius:16px;
-        padding:22px 10px;cursor:pointer;
-        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
-        display:flex;flex-direction:column;align-items:center;gap:6px;
-        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
-        GBA 3
-        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 3</span>
+      <button onclick="pickZona('gba3')" class="zona-btn" style="background:#ef4444;color:#fff">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:28px">GBA 3</span>
+        <span style="font-size:10px;font-weight:700;opacity:.65;letter-spacing:1px">Zona 3</span>
       </button>
     </div>
-    <button class="btn btn-gh" onclick="cancelZona()">Cancelar — seguir escaneando</button>
+    <button class="btn btn-gh" onclick="cancelZona()">Cancelar</button>
   </div>
 </div>
 
@@ -945,59 +960,53 @@ function rColectas(){
   document.getElementById('col-big').textContent=curCT();
   document.getElementById('col-sub').textContent=`${S.today.cols.length} colecta${S.today.cols.length!==1?'s':''} guardada${S.today.cols.length!==1?'s':''} · ${fmt(gainC())}`;
 
-  // Update comercio badge
+  // comercio badge
   const cn=document.getElementById('col-comercio-name');
-  if(cn) cn.textContent=S.comercioActual||'— Seleccionar —';
+  if(cn)cn.textContent=S.comercioActual||'— Seleccionar —';
 
-  // Render separated Flex grid
+  // show turbo toggle
+  const tw=document.getElementById('turbo-wrap');
+  if(tw)tw.style.display='block';
+
+  // Flex mini grid (overlay version)
   const flexGrid=document.getElementById('col-flex-grid');
   if(flexGrid){
-    const hasAny=ZS.some(z=>(S.today.cf[z]||0)>0);
     flexGrid.innerHTML=ZS.map(z=>{
       const v=S.today.cf[z]||0;
-      return`<div class="qz-cell" style="${v>0?'border-color:var(--gold)':''}">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">${ZL[z]}</div>
-        <div class="qz-v" style="color:${v>0?'var(--gold)':'var(--t3)'}">${v}</div>
+      return`<div style="text-align:center;padding:3px 0">
+        <div style="font-size:9px;font-weight:700;color:rgba(245,200,66,${v>0?'.8':'.35'})">${ZL[z]}</div>
+        <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:${v>0?'var(--gold)':'rgba(255,255,255,.2)'}">${v}</div>
       </div>`;
     }).join('');
   }
 
-  // Render separated Particular grid
+  // Particular mini grid (overlay version)
   const partGrid=document.getElementById('col-part-grid');
   if(partGrid){
     partGrid.innerHTML=ZS.map(z=>{
       const v=S.today.cp[z]||0;
-      return`<div class="qz-cell" style="${v>0?'border-color:#3b82f6':''}">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)">${ZL[z]}</div>
-        <div class="qz-v" style="color:${v>0?'#3b82f6':'var(--t3)'}">${v}</div>
+      return`<div style="text-align:center;padding:3px 0">
+        <div style="font-size:9px;font-weight:700;color:${v>0?'rgba(59,130,246,.9)':'rgba(59,130,246,.3)'}">${ZL[z]}</div>
+        <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:${v>0?'#3b82f6':'rgba(255,255,255,.2)'}">${v}</div>
       </div>`;
     }).join('');
   }
 
+  // pkg list button count
+  const pkgs=S.today.pkgs||[];
+  const ptBtn=document.getElementById('pkg-toggle-count');
+  if(ptBtn)ptBtn.textContent=pkgs.length;
+
+  // col-last timer
   const lp=document.getElementById('col-last');
   if(S.lct){
     const sec=Math.round((Date.now()-S.lct)/1000);
-    const disp=sec<60?`${sec} seg`:`${Math.floor(sec/60)}m ${sec%60}s`;
+    const disp=sec<60?`${sec}s`:`${Math.floor(sec/60)}m${sec%60}s`;
     const z=S.lcz||'caba';
-    lp.innerHTML=`<strong style="color:var(--t1)">${disp}</strong> — <span class="pill ${ZP[z]}" style="font-size:12px;padding:3px 10px">${ZL[z]}</span>`;
+    lp.innerHTML=`<strong style="color:rgba(255,255,255,.8)">${disp}</strong> <span class="pill ${ZP[z]}" style="font-size:10px;padding:2px 8px">${ZL[z]}</span>`;
   } else {
-    lp.innerHTML=`<span style="color:var(--t3)">— sin paquetes aún —</span>`;
+    lp.innerHTML=`<span style="color:rgba(255,255,255,.35)">— sin paquetes aún —</span>`;
   }
-
-  // Manual counters
-  ['flex','part'].forEach(tipo=>{
-    const key=tipo==='flex'?'cf':'cp';
-    const el=document.getElementById('col-'+tipo);
-    if(el) el.innerHTML=ZS.map(z=>`
-      <div class="ctr">
-        <span class="pill ${ZP[z]}" style="min-width:60px;justify-content:center">${ZL[z]}</span>
-        <div class="ctr-v" style="font-size:28px">${S.today[key][z]}</div>
-        <div class="ctr-btns">
-          <button class="cb cb-m cb-sm" ontouchstart="" onclick="doCol('${tipo}','${z}',-1)">−</button>
-          <button class="cb cb-p cb-sm" ontouchstart="" onclick="doCol('${tipo}','${z}',1)">+</button>
-        </div>
-      </div>`).join('');
-  });
 
   rColHist();
   rPkgList();
@@ -1355,6 +1364,21 @@ function openCloseDay(){
   const tC=t.comb.reduce((a,c)=>a+c.monto,0);
   const tP=t.peajes.reduce((a,p)=>a+p.monto,0);
   const cp=t.cols.reduce((a,c)=>a+c.total,0);
+
+  // Build comercio summary from scanned packages
+  const pkgs=t.pkgs||[];
+  const comercioMap={};
+  pkgs.forEach(p=>{
+    const com=p.comercio||'Sin comercio';
+    if(!comercioMap[com])comercioMap[com]={flex:0,part:0};
+    const n=p.bultos||1;
+    if(p.tipo==='flex')comercioMap[com].flex+=n;
+    else comercioMap[com].part+=n;
+  });
+  const comercioRows=Object.entries(comercioMap).map(([com,v])=>
+    `<div class="smr"><span>🏪 ${com}</span><span>${v.flex>0?v.flex+'F ':''} ${v.part>0?v.part+'P':''}</span></div>`
+  ).join('');
+
   document.getElementById('close-sum').innerHTML=`
     <div class="smr"><span>Fecha</span><span>${t.label}</span></div>
     <div class="smr"><span>Paquetes cargados</span><span>${t.cargados}</span></div>
@@ -1365,6 +1389,7 @@ function openCloseDay(){
     <div class="smr"><span>GBA3</span><span>${t.ent.gba3}</span></div>
     <div class="smr"><span>Bicicletas</span><span>${t.bicis}</span></div>
     <div class="smr"><span>Colectas</span><span>${t.cols.length} (${cp} pkds)</span></div>
+    ${pkgs.length?'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);padding:10px 0 4px">Por comercio</div>'+comercioRows:''}
     <div class="smr"><span>Km recorridos</span><span>${t.kmF>t.kmI?t.kmF-t.kmI:0} km</span></div>
     <div class="smr"><span>Combustible</span><span>${fmt(tC)}</span></div>
     <div class="smr"><span>Peajes</span><span>${fmt(tP)}</span></div>
@@ -1700,7 +1725,10 @@ function saveCustomComercio(){
 let _qrStream=null,_qrAnim=null;
 let _lastQRId=null,_qrCooldown=false;
 let _pendingPkgId=null,_pendingTipo=null;
+let _pendingBultos=1,_pendingBultosTotal=1;
 let _qrDetector=null;
+let _turboMode=false,_turboZona=null;
+let _pkgListOpen=false;
 
 function setStatus(msg){
   const el=document.getElementById('qr-status');
@@ -1736,7 +1764,7 @@ function stopQR(){
 function flashDetected(color){
   const f=document.getElementById('qr-flash');
   if(!f)return;
-  f.style.background=color==='red'?'rgba(239,68,68,.35)':'rgba(245,200,66,.25)';
+  f.style.background=color==='red'?'rgba(239,68,68,.45)':'rgba(245,200,66,.3)';
   f.style.display='block';
   setTimeout(()=>f.style.display='none',300);
 }
@@ -1749,64 +1777,76 @@ function tick(){
   if(!_qrStream){return;}
   const video=document.getElementById('qr-video');
   if(!video||video.readyState<2){_qrAnim=requestAnimationFrame(tick);return;}
-
   const canvas=document.createElement('canvas');
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
   canvas.getContext('2d').drawImage(video,0,0);
-
   if(!_qrCooldown){
     if(window.BarcodeDetector){
-      if(!_qrDetector) _qrDetector=new BarcodeDetector({formats:['qr_code']});
+      if(!_qrDetector)_qrDetector=new BarcodeDetector({formats:['qr_code']});
       _qrDetector.detect(canvas).then(codes=>{
-        if(codes.length>0) handleQR(codes[0].rawValue);
+        if(codes.length>0)handleQR(codes[0].rawValue);
       }).catch(()=>{});
     } else if(window.jsQR){
       const img=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
       const code=jsQR(img.data,img.width,img.height);
-      if(code) handleQR(code.data);
+      if(code)handleQR(code.data);
     }
   }
   _qrAnim=requestAnimationFrame(tick);
 }
 
 function handleQR(raw){
-  if(_qrCooldown||_pendingPkgId) return;
+  if(_qrCooldown||_pendingPkgId)return;
   let data;
   try{data=JSON.parse(raw);}catch(e){return;}
   const id=String(data.id||'');
-  if(!id||id===_lastQRId) return;
+  if(!id||id===_lastQRId)return;
 
   if(isDuplicate(id)){
     _lastQRId=id;
-    flashDetected('red');
-    vibrate([40,20,40,20,40]);
-    showDuplicate(id);
-    return;
+    flashDetected('red');vibrate([40,20,40,20,40]);
+    showDuplicate(id);return;
   }
 
-  // New package — show zone picker
-  _lastQRId=id;
-  _pendingPkgId=id;
+  _lastQRId=id;_pendingPkgId=id;
   _pendingTipo=(data.sender_id&&id.length>8)?'flex':'part';
+  // detect bultos from bulk/bulks fields
+  _pendingBultos=data.bulk||1;
+  _pendingBultosTotal=data.bulks||1;
   _qrCooldown=true;
-  flashDetected('gold');
-  playTap();
-  openZonaPicker(id, _pendingTipo);
+  flashDetected('gold');playTap();
+
+  // TURBO MODE — skip modal, register directly with stored zona
+  if(_turboMode&&_turboZona){
+    vibrate([60,30,60]);
+    registerPackageN(_pendingTipo,_turboZona,id,_pendingBultos);
+    setStatus(`⚡ ${ZL[_turboZona]} · ${_pendingTipo==='flex'?'Flex':'Part.'}`);
+    return;
+  }
+  openZonaPicker(id,_pendingTipo,_pendingBultos,_pendingBultosTotal);
 }
 
-// ── Zone picker ──
-function openZonaPicker(id, tipo){
+// ── BULTOS counter ──
+let _zonaPickerBultos=1;
+function adjBultos(d){
+  _zonaPickerBultos=Math.max(1,_zonaPickerBultos+d);
+  document.getElementById('zona-bultos-n').textContent=_zonaPickerBultos;
+}
+
+function openZonaPicker(id,tipo,bultos,bultosTotal){
+  _zonaPickerBultos=bultos||1;
   const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
   const tipoColor=tipo==='flex'?'var(--gold)':'#3b82f6';
-  document.getElementById('zona-pkg-tipo').innerHTML=
-    `<span style="color:${tipoColor}">${tipoLabel}</span>`;
+  document.getElementById('zona-pkg-tipo').innerHTML=`<span style="color:${tipoColor}">${tipoLabel}</span>`;
   document.getElementById('zona-pkg-id').textContent=`ID: ${String(id).slice(-12)}`;
-  // Add active press effect to buttons
-  document.querySelectorAll('#m-zona button[onclick^="pickZona"]').forEach(btn=>{
-    btn.ontouchstart=()=>{btn.style.transform='scale(.94)';btn.style.filter='brightness(.85)';};
-    btn.ontouchend=()=>{btn.style.transform='';btn.style.filter='';};
-  });
+  // show bultos row only if package has multiple bultos
+  const bultosRow=document.getElementById('zona-bultos-row');
+  if(bultosTotal>1||bultos>1){
+    bultosRow.style.display='flex';
+    document.getElementById('zona-bultos-n').textContent=_zonaPickerBultos;
+  } else {
+    bultosRow.style.display='none';
+  }
   openM('m-zona');
 }
 
@@ -1814,10 +1854,13 @@ function pickZona(zona){
   closeM('m-zona');
   const id=_pendingPkgId;
   const tipo=_pendingTipo||'flex';
+  const bultos=_zonaPickerBultos||1;
   _pendingPkgId=null;_pendingTipo=null;
   if(!id)return;
   vibrate([60,30,60]);
-  registerPackage(tipo, zona, '', '', id);
+  registerPackageN(tipo,zona,id,bultos);
+  // If turbo: remember this zona
+  if(_turboMode)_turboZona=zona;
 }
 
 function cancelZona(){
@@ -1827,65 +1870,65 @@ function cancelZona(){
   setStatus('📷 Apuntá al QR del paquete');
 }
 
+// ── Turbo mode ──
+function toggleTurbo(){
+  _turboMode=!_turboMode;
+  if(!_turboMode)_turboZona=null;
+  const btn=document.getElementById('turbo-btn');
+  const label=document.getElementById('turbo-label');
+  const icon=document.getElementById('turbo-icon');
+  if(btn){
+    btn.style.borderColor=_turboMode?'var(--gold)':'rgba(255,255,255,.2)';
+    btn.style.color=_turboMode?'var(--gold)':'rgba(255,255,255,.7)';
+  }
+  if(label)label.textContent=_turboMode?'TURBO ON':'TURBO OFF';
+  if(icon)icon.textContent=_turboMode?'⚡':'⚡';
+  toast(_turboMode?'⚡ Turbo activado — la primera zona escaneada se repite':'Turbo desactivado');
+}
+
+// ── PKG LIST toggle ──
+function togglePkgList(){
+  _pkgListOpen=!_pkgListOpen;
+  const sec=document.getElementById('pkg-list-section');
+  if(sec)sec.style.display=_pkgListOpen?'block':'none';
+  if(_pkgListOpen){
+    // scroll into view
+    setTimeout(()=>sec.scrollIntoView({behavior:'smooth'}),50);
+  }
+}
+
 // ── Duplicate helpers ──
 function isDuplicate(pkgId){
-  if(!pkgId||!S.today.pkgs) return false;
+  if(!pkgId||!S.today.pkgs)return false;
   return S.today.pkgs.some(p=>p.pkgId===pkgId);
 }
 
 function showDuplicate(pkgId){
   const prev=S.today.pkgs.find(p=>p.pkgId===pkgId);
-  const info=prev?` · ${prev.tipo==='flex'?'Flex':'Particular'} · ${ZL[prev.zona]} · ${prev.hora}`:'';
+  const info=prev?` · ${prev.tipo==='flex'?'Flex':'Part.'} · ${ZL[prev.zona]} · ${prev.hora}`:'';
   toast(`🚫 Ya colectado${info}`);
   setTimeout(()=>{_lastQRId=null;},4000);
 }
 
-function registerPackage(tipo,zona,cp,loc,pkgId){
+// Register N bultos at once
+function registerPackageN(tipo,zona,pkgId,n){
+  n=n||1;
   const key=tipo==='flex'?'cf':'cp';
-  S.today[key][zona]=(S.today[key][zona]||0)+1;
+  S.today[key][zona]=(S.today[key][zona]||0)+n;
   if(!S.today.pkgs)S.today.pkgs=[];
-  S.today.pkgs.push({pkgId,tipo,zona,cp,loc,hora:tnow(),comercio:S.comercioActual||''});
+  S.today.pkgs.push({pkgId,tipo,zona,cp:'',loc:'',hora:tnow(),comercio:S.comercioActual||'',bultos:n});
   S.lct=Date.now();S.lcz=zona;
   if(_ctm)clearInterval(_ctm);
   _ctm=setInterval(rColectas,1000);
   const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
-  toast(`✅ ${tipoLabel} → ${ZL[zona]}`);
+  const bultosLabel=n>1?` · ${n} bultos`:'';
+  toast(`✅ ${tipoLabel} → ${ZL[zona]}${bultosLabel}`);
   setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},1800);
   rAll();
 }
 
-// ══════════════════════════
-//  BOTTOM SHEET (paquetes)
-// ══════════════════════════
-let _sheetOpen=false,_shTouchY=0,_shDy=0;
-
-function togglePkgSheet(){
-  _sheetOpen?closePkgSheet():openPkgSheet();
-}
-function openPkgSheet(){
-  _sheetOpen=true;
-  document.getElementById('pkg-sheet').style.transform='translateY(0)';
-  document.getElementById('pkg-sheet-backdrop').style.display='block';
-}
-function closePkgSheet(){
-  _sheetOpen=false;
-  document.getElementById('pkg-sheet').style.transform='translateY(calc(100% - 60px))';
-  document.getElementById('pkg-sheet-backdrop').style.display='none';
-}
-function sheetTouchStart(e){
-  _shTouchY=e.touches[0].clientY;_shDy=0;
-  document.getElementById('pkg-sheet').style.transition='none';
-}
-function sheetTouchMove(e){
-  _shDy=e.touches[0].clientY-_shTouchY;
-  const sheet=document.getElementById('pkg-sheet');
-  if(_sheetOpen&&_shDy>0)sheet.style.transform=`translateY(${_shDy}px)`;
-  if(!_sheetOpen&&_shDy<0)sheet.style.transform=`translateY(calc(100% - 60px + ${_shDy}px))`;
-}
-function sheetTouchEnd(){
-  document.getElementById('pkg-sheet').style.transition='transform .3s cubic-bezier(.22,.61,.36,1)';
-  if(_sheetOpen){_shDy>80?closePkgSheet():openPkgSheet();}
-  else{_shDy<-60?openPkgSheet():closePkgSheet();}
+function registerPackage(tipo,zona,cp,loc,pkgId){
+  registerPackageN(tipo,zona,pkgId,1);
 }
 
 // ══════════════════════════
