@@ -298,6 +298,8 @@ select.inp{appearance:none}
 
 <!-- ████ COLECTAS ████ -->
 <div id="s-col" class="scr">
+
+  <!-- HEADER -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
     <div>
       <div class="ptitle">Colectas</div>
@@ -309,59 +311,66 @@ select.inp{appearance:none}
     </div>
   </div>
 
-  <!-- OCR SCANNER AREA -->
-  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:10px;aspect-ratio:4/3;max-height:260px">
+  <!-- SCANNER -->
+  <div id="qr-wrap" style="position:relative;border-radius:18px;overflow:hidden;background:#000;margin-bottom:14px;aspect-ratio:4/3;max-height:240px">
     <video id="qr-video" style="width:100%;height:100%;object-fit:cover;display:block" playsinline muted></video>
     <div id="qr-line" style="position:absolute;left:10%;right:10%;height:2px;background:var(--gold);box-shadow:0 0 8px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
-      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:8px;width:72%;height:38%;display:flex;align-items:center;justify-content:center">
-        <span style="color:rgba(245,200,66,.7);font-size:11px;font-weight:700;letter-spacing:1px">QR → CP DE LA ETIQUETA</span>
-      </div>
+      <div style="border:2px dashed rgba(245,200,66,.5);border-radius:10px;width:55%;height:55%;"></div>
     </div>
-    <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
+    <div id="qr-status" style="position:absolute;bottom:0;left:0;right:0;padding:10px;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.8));font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">Iniciando cámara…</div>
     <div id="qr-flash" style="display:none;position:absolute;inset:0;background:rgba(245,200,66,.25);pointer-events:none;border-radius:18px"></div>
   </div>
 
-  <!-- TOTALES EN CURSO -->
+  <!-- TOTALES -->
   <div class="col-big" id="col-big">0</div>
   <div class="col-last" id="col-last"><span style="color:var(--t3)">— sin paquetes aún —</span></div>
 
   <!-- FLEX en curso -->
-  <div class="slabel" style="margin-top:8px">📦 Flex en curso</div>
+  <div class="slabel" style="margin-top:8px">📦 Flex</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-flex-grid"></div>
 
   <!-- PARTICULAR en curso -->
-  <div class="slabel">🏠 Particular en curso</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="col-part-grid"></div>
+  <div class="slabel">🏠 Particular</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="col-part-grid"></div>
 
-  <!-- PAQUETES ESCANEADOS (swipe to delete) -->
-  <div id="pkg-list-wrap" style="display:none;margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="slabel" style="margin:0">📋 Escaneados hoy</div>
-      <div id="pkg-list-count" style="font-size:11px;color:var(--t3)"></div>
-    </div>
-    <div id="pkg-list" style="max-height:260px;overflow-y:auto"></div>
-  </div>
-
-  <!-- manual counters (collapsible) -->
-  <details style="margin-bottom:10px">
-    <summary style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--t3);cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Entrada manual (sin escaneo)
-    </summary>
-    <div style="padding-top:8px">
-      <div class="slabel" style="margin-top:0">FLEX</div>
-      <div id="col-flex"></div>
-      <div class="slabel">PARTICULAR</div>
-      <div id="col-part"></div>
-    </div>
-  </details>
-
-  <button class="btn btn-ok" onclick="regColecta()" style="margin-bottom:24px">
+  <!-- REGISTRAR COLECTA -->
+  <button class="btn btn-ok" onclick="regColecta()" style="margin-bottom:14px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
     Registrar colecta
   </button>
+
+  <!-- HISTORIAL COLECTAS DEL DIA -->
   <div id="col-hist"></div>
+
+  <!-- SHEET: paquetes escaneados (deslizar hacia arriba) -->
+  <div id="pkg-sheet-backdrop" onclick="closePkgSheet()" style="display:none;position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.5)"></div>
+  <div id="pkg-sheet" style="
+    position:fixed;bottom:0;left:0;right:0;z-index:295;
+    background:var(--bg2);border:1px solid var(--b1);
+    border-radius:22px 22px 0 0;
+    max-height:75vh;
+    transform:translateY(calc(100% - 60px));
+    transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    max-width:480px;margin:0 auto;
+  ">
+    <!-- drag handle + title row -->
+    <div id="pkg-sheet-handle"
+      style="padding:10px 18px 0;cursor:pointer"
+      ontouchstart="sheetTouchStart(event)"
+      ontouchmove="sheetTouchMove(event)"
+      ontouchend="sheetTouchEnd(event)"
+      onclick="togglePkgSheet()">
+      <div style="width:40px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 10px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--b1)">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:16px">📋 Escaneados hoy</div>
+        <div id="pkg-sheet-count" style="font-size:12px;font-weight:700;color:var(--t3)">0 paquetes</div>
+      </div>
+    </div>
+    <!-- list -->
+    <div id="pkg-list" style="overflow-y:auto;max-height:calc(75vh - 80px);padding:10px 18px 24px"></div>
+  </div>
+
 </div>
 
 <!-- ████ COMBUSTIBLE ████ -->
@@ -574,6 +583,58 @@ select.inp{appearance:none}
       <button class="btn btn-gh" style="flex:1" onclick="cancelQR()">Cancelar</button>
       <button class="btn btn-ok" style="flex:1" id="mqr-confirm-btn" onclick="confirmManualQR()" class="btn-off">Confirmar</button>
     </div>
+  </div>
+</div>
+
+<!-- ZONA PICKER -->
+<div class="ov" id="m-zona">
+  <div class="modal" style="padding-bottom:max(28px,env(safe-area-inset-bottom))">
+    <div class="m-drag"></div>
+    <div style="text-align:center;margin-bottom:6px">
+      <div id="zona-pkg-tipo" style="font-size:13px;font-weight:700;color:var(--t2)"></div>
+      <div id="zona-pkg-id" style="font-family:monospace;font-size:11px;color:var(--t3);margin-top:2px"></div>
+    </div>
+    <div class="m-title" style="text-align:center;margin-bottom:18px">¿A qué zona pertenece?</div>
+    <!-- 4 big zone buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <button onclick="pickZona('caba')" style="
+        background:#f5c842;color:#000;border:none;border-radius:16px;
+        padding:22px 10px;cursor:pointer;
+        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
+        display:flex;flex-direction:column;align-items:center;gap:6px;
+        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
+        CABA
+        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Capital</span>
+      </button>
+      <button onclick="pickZona('gba1')" style="
+        background:#22c55e;color:#000;border:none;border-radius:16px;
+        padding:22px 10px;cursor:pointer;
+        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
+        display:flex;flex-direction:column;align-items:center;gap:6px;
+        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
+        GBA 1
+        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 1</span>
+      </button>
+      <button onclick="pickZona('gba2')" style="
+        background:#f97316;color:#000;border:none;border-radius:16px;
+        padding:22px 10px;cursor:pointer;
+        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
+        display:flex;flex-direction:column;align-items:center;gap:6px;
+        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
+        GBA 2
+        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 2</span>
+      </button>
+      <button onclick="pickZona('gba3')" style="
+        background:#ef4444;color:#fff;border:none;border-radius:16px;
+        padding:22px 10px;cursor:pointer;
+        font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px;
+        display:flex;flex-direction:column;align-items:center;gap:6px;
+        transition:transform .08s,filter .1s;-webkit-tap-highlight-color:transparent">
+        GBA 3
+        <span style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:1px">Zona 3</span>
+      </button>
+    </div>
+    <button class="btn btn-gh" onclick="cancelZona()">Cancelar — seguir escaneando</button>
   </div>
 </div>
 
@@ -942,23 +1003,24 @@ function rColectas(){
   rPkgList();
 }
 
-// ── SCANNED PACKAGE LIST with swipe-to-delete ──
+// ── SCANNED PACKAGE LIST (inside bottom sheet) ──
 function rPkgList(){
   const pkgs=S.today.pkgs||[];
-  const wrap=document.getElementById('pkg-list-wrap');
   const list=document.getElementById('pkg-list');
-  const count=document.getElementById('pkg-list-count');
-  if(!wrap||!list)return;
-  if(!pkgs.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
+  const count=document.getElementById('pkg-sheet-count');
+  if(!list)return;
   count.textContent=`${pkgs.length} paquete${pkgs.length!==1?'s':''}`;
 
-  // Show newest first
+  if(!pkgs.length){
+    list.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px 0;font-size:13px">Sin paquetes escaneados aún</div>';
+    return;
+  }
+
   list.innerHTML=[...pkgs].reverse().map((p,ri)=>{
     const idx=pkgs.length-1-ri;
     const tipoColor=p.tipo==='flex'?'var(--gold)':'#3b82f6';
     const tipoIcon=p.tipo==='flex'?'📦':'🏠';
-    const idShort=p.pkgId?String(p.pkgId).slice(-8):'-';
+    const idShort=p.pkgId?String(p.pkgId).slice(-10):'-';
     return`<div class="pkg-item" id="pkg-${idx}">
       <div class="pkg-delete-bg">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
@@ -973,9 +1035,7 @@ function rPkgList(){
             <span class="pill ${ZP[p.zona]}" style="font-size:10px;padding:2px 8px">${ZL[p.zona]}</span>
             <span style="font-size:11px;font-weight:700;color:${tipoColor}">${p.tipo==='flex'?'FLEX':'PART'}</span>
           </div>
-          <div style="font-size:12px;color:var(--t2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${p.loc||p.cp||'sin datos'} · <span style="font-family:monospace;font-size:11px">${idShort}</span>
-          </div>
+          <div style="font-size:11px;color:var(--t2);margin-top:3px;font-family:monospace">${idShort}</div>
         </div>
         <div style="font-size:11px;color:var(--t3);flex:none">${p.hora||''}</div>
       </div>
@@ -988,32 +1048,26 @@ let _swX=0,_swDx=0,_swIdx=null;
 const SWIPE_THRESHOLD=70;
 
 function swipeStart(e,idx){
-  _swX=e.touches[0].clientX;
-  _swDx=0;
-  _swIdx=idx;
+  _swX=e.touches[0].clientX;_swDx=0;_swIdx=idx;
   const item=document.getElementById('pkg-'+idx);
   if(item)item.classList.add('pkg-swiping');
 }
-
 function swipeMove(e,idx){
   if(_swIdx!==idx)return;
   _swDx=e.touches[0].clientX-_swX;
-  if(_swDx>0)_swDx=0; // only swipe left
+  if(_swDx>0)_swDx=0;
   const inner=document.querySelector(`#pkg-${idx} .pkg-item-inner`);
   if(inner)inner.style.transform=`translateX(${_swDx}px)`;
 }
-
 function swipeEnd(e,idx){
   if(_swIdx!==idx)return;
   const item=document.getElementById('pkg-'+idx);
   const inner=document.querySelector(`#pkg-${idx} .pkg-item-inner`);
   if(item)item.classList.remove('pkg-swiping');
   if(Math.abs(_swDx)>=SWIPE_THRESHOLD){
-    // Animate out then delete
     if(inner){inner.style.transition='transform .18s ease';inner.style.transform='translateX(-100%)';}
     setTimeout(()=>deletePkg(idx),180);
   } else {
-    // Snap back
     if(inner){inner.style.transition='transform .2s ease';inner.style.transform='translateX(0)';}
   }
   _swIdx=null;_swDx=0;
@@ -1022,12 +1076,11 @@ function swipeEnd(e,idx){
 function deletePkg(idx){
   if(!S.today.pkgs||!S.today.pkgs[idx])return;
   const p=S.today.pkgs[idx];
-  // Decrement the counter
   const key=p.tipo==='flex'?'cf':'cp';
   if(S.today[key][p.zona]>0)S.today[key][p.zona]--;
   S.today.pkgs.splice(idx,1);
   vibrate([30]);
-  toast(`🗑️ Paquete eliminado`);
+  toast('🗑️ Paquete eliminado');
   rAll();
 }
 
@@ -1642,37 +1695,12 @@ function saveCustomComercio(){
 }
 
 // ══════════════════════════
-//  SCANNER: QR (id) → OCR (zona)
+//  SCANNER: QR only → manual zone pick
 // ══════════════════════════
-let _qrStream=null,_qrAnim=null,_qrPending=null,_qrType=null,_mqrType=null;
+let _qrStream=null,_qrAnim=null;
 let _lastQRId=null,_qrCooldown=false;
-let _ocrWorker=null,_ocrReady=false,_ocrBusy=false;
-let _lastOCRTime=0;
-let _mismatchPending=null;
-let _pendingPkgId=null; // ID from QR, waiting for OCR to get zone
-let _pendingTipo=null;  // tipo inferred from QR structure
+let _pendingPkgId=null,_pendingTipo=null;
 let _qrDetector=null;
-
-async function initOCR(){
-  if(_ocrWorker||_ocrReady) return;
-  try{
-    const {createWorker}=Tesseract;
-    _ocrWorker=await createWorker('eng',1,{
-      workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-      langPath:'https://tessdata.projectnaptha.com/4.0.0',
-      corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
-      logger:()=>{}
-    });
-    await _ocrWorker.setParameters({
-      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789():./- ',
-      tessedit_pageseg_mode:'6'
-    });
-    _ocrReady=true;
-    setStatus('📷 Apuntá al QR del paquete');
-  }catch(e){
-    setStatus('⚠️ Error al cargar lector');
-  }
-}
 
 function setStatus(msg){
   const el=document.getElementById('qr-status');
@@ -1690,9 +1718,8 @@ async function startQR(){
     video.srcObject=_qrStream;
     await video.play();
     document.getElementById('qr-line').style.display='block';
-    setStatus('Cargando lector…');
+    setStatus('📷 Apuntá al QR del paquete');
     tick();
-    initOCR();
   }catch(e){
     setStatus('⚠️ Sin acceso a la cámara');
   }
@@ -1703,7 +1730,7 @@ function stopQR(){
   if(_qrAnim){cancelAnimationFrame(_qrAnim);_qrAnim=null;}
   const line=document.getElementById('qr-line');
   if(line) line.style.display='none';
-  _pendingPkgId=null;
+  _pendingPkgId=null;_pendingTipo=null;
 }
 
 function flashDetected(color){
@@ -1718,7 +1745,6 @@ function vibrate(pattern){
   try{if(navigator.vibrate)navigator.vibrate(pattern||[60,30,60]);}catch(e){}
 }
 
-// ── Main tick: tries QR every frame, OCR every 1.2s ──
 function tick(){
   if(!_qrStream){return;}
   const video=document.getElementById('qr-video');
@@ -1729,7 +1755,6 @@ function tick(){
   canvas.height=video.videoHeight;
   canvas.getContext('2d').drawImage(video,0,0);
 
-  // ── STEP 1: Read QR for unique ID ──
   if(!_qrCooldown){
     if(window.BarcodeDetector){
       if(!_qrDetector) _qrDetector=new BarcodeDetector({formats:['qr_code']});
@@ -1742,36 +1767,9 @@ function tick(){
       if(code) handleQR(code.data);
     }
   }
-
-  // ── STEP 2: OCR for CP + locality (only after QR id captured) ──
-  const now=Date.now();
-  if(_pendingPkgId && _ocrReady && !_ocrBusy && (now-_lastOCRTime)>1200){
-    _lastOCRTime=now;
-    _ocrBusy=true;
-    setStatus('🔍 Leyendo dirección…');
-
-    const cw=Math.floor(canvas.width*.75);
-    const ch=Math.floor(canvas.height*.65);
-    const cx=Math.floor(canvas.width*.12);
-    const cy=Math.floor(canvas.height*.18);
-    const out=document.createElement('canvas');
-    out.width=cw*2;out.height=ch*2;
-    out.getContext('2d').drawImage(canvas,cx,cy,cw,ch,0,0,cw*2,ch*2);
-
-    _ocrWorker.recognize(out).then(({data:{text}})=>{
-      _ocrBusy=false;
-      if(!_pendingPkgId)return;
-      const result=parseLabel(text);
-      if(result.cp||result.loc){
-        handleLabelDetected({...result, pkgId:_pendingPkgId});
-      }
-    }).catch(()=>{_ocrBusy=false;});
-  }
-
   _qrAnim=requestAnimationFrame(tick);
 }
 
-// ── QR handler: extract ID, check duplicate, wait for OCR ──
 function handleQR(raw){
   if(_qrCooldown||_pendingPkgId) return;
   let data;
@@ -1779,7 +1777,6 @@ function handleQR(raw){
   const id=String(data.id||'');
   if(!id||id===_lastQRId) return;
 
-  // Duplicate check — block immediately
   if(isDuplicate(id)){
     _lastQRId=id;
     flashDetected('red');
@@ -1788,17 +1785,48 @@ function handleQR(raw){
     return;
   }
 
-  // New package — store ID and wait for OCR to get zone
+  // New package — show zone picker
   _lastQRId=id;
   _pendingPkgId=id;
-  // Infer tipo from QR structure
-  _pendingTipo = (data.sender_id && id.length>8) ? 'flex' : 'part';
+  _pendingTipo=(data.sender_id&&id.length>8)?'flex':'part';
+  _qrCooldown=true;
   flashDetected('gold');
   playTap();
-  setStatus(`✅ QR leído · Apuntá al CP…`);
+  openZonaPicker(id, _pendingTipo);
 }
 
-// ── Parse label text for CP, locality ──
+// ── Zone picker ──
+function openZonaPicker(id, tipo){
+  const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
+  const tipoColor=tipo==='flex'?'var(--gold)':'#3b82f6';
+  document.getElementById('zona-pkg-tipo').innerHTML=
+    `<span style="color:${tipoColor}">${tipoLabel}</span>`;
+  document.getElementById('zona-pkg-id').textContent=`ID: ${String(id).slice(-12)}`;
+  // Add active press effect to buttons
+  document.querySelectorAll('#m-zona button[onclick^="pickZona"]').forEach(btn=>{
+    btn.ontouchstart=()=>{btn.style.transform='scale(.94)';btn.style.filter='brightness(.85)';};
+    btn.ontouchend=()=>{btn.style.transform='';btn.style.filter='';};
+  });
+  openM('m-zona');
+}
+
+function pickZona(zona){
+  closeM('m-zona');
+  const id=_pendingPkgId;
+  const tipo=_pendingTipo||'flex';
+  _pendingPkgId=null;_pendingTipo=null;
+  if(!id)return;
+  vibrate([60,30,60]);
+  registerPackage(tipo, zona, '', '', id);
+}
+
+function cancelZona(){
+  closeM('m-zona');
+  _pendingPkgId=null;_pendingTipo=null;
+  _qrCooldown=false;_lastQRId=null;
+  setStatus('📷 Apuntá al QR del paquete');
+}
+
 // ── Duplicate helpers ──
 function isDuplicate(pkgId){
   if(!pkgId||!S.today.pkgs) return false;
@@ -1808,66 +1836,8 @@ function isDuplicate(pkgId){
 function showDuplicate(pkgId){
   const prev=S.today.pkgs.find(p=>p.pkgId===pkgId);
   const info=prev?` · ${prev.tipo==='flex'?'Flex':'Particular'} · ${ZL[prev.zona]} · ${prev.hora}`:'';
-  toast(`🚫 Paquete ya colectado${info}`);
+  toast(`🚫 Ya colectado${info}`);
   setTimeout(()=>{_lastQRId=null;},4000);
-}
-
-// ── Label detected: resolve zone and register ──
-function handleLabelDetected({cp,tipo,loc,pkgId}){
-  if(!pkgId) return;
-
-  // tipo from OCR takes priority over QR inference, fallback to QR
-  const tipoFinal = tipo || _pendingTipo || 'flex';
-  const comercio=S.comercioActual||'';
-  const zonaByLoc=loc?getZonaForLoc(loc,comercio):null;
-  const zonaByCP=cp?getZonaForCP(cp,comercio):null;
-
-  if(!zonaByLoc&&!zonaByCP){
-    setStatus('📷 Apuntá al CP de la etiqueta');
-    return; // keep scanning
-  }
-
-  _pendingPkgId=null; // clear pending
-  _qrCooldown=true;
-
-  if(!zonaByLoc&&zonaByCP){
-    flashDetected('gold');vibrate();
-    registerPackage(tipoFinal,zonaByCP,cp||'',loc||'',pkgId);
-  } else if(!zonaByCP&&zonaByLoc){
-    flashDetected('gold');vibrate();
-    registerPackage(tipoFinal,zonaByLoc,cp||'',loc||'',pkgId);
-  } else if(zonaByLoc===zonaByCP){
-    flashDetected('gold');vibrate();
-    registerPackage(tipoFinal,zonaByLoc,cp,loc,pkgId);
-  } else {
-    // Mismatch — warn, localidad wins
-    _mismatchPending={tipo:tipoFinal,zona:zonaByLoc,cp,loc,zonaCP:zonaByCP,pkgId};
-    showMismatch(loc,cp,zonaByLoc,zonaByCP);
-  }
-}
-
-function showMismatch(loc,cp,zonaLoc,zonaCP){
-  document.getElementById('mismatch-body').innerHTML=`
-    <div style="margin-bottom:8px">
-      <span style="color:var(--t3);font-size:12px">Localidad detectada</span><br>
-      <strong style="color:var(--t1);font-size:16px">${loc}</strong>
-      <span class="pill ${ZP[zonaLoc]}" style="margin-left:8px">${ZL[zonaLoc]}</span>
-    </div>
-    <div>
-      <span style="color:var(--t3);font-size:12px">CP detectado</span><br>
-      <strong style="color:var(--t1);font-size:16px">${cp}</strong>
-      <span class="pill ${ZP[zonaCP]}" style="margin-left:8px">${ZL[zonaCP]}</span>
-    </div>`;
-  openM('m-mismatch');
-}
-
-function confirmMismatch(){
-  closeM('m-mismatch');
-  if(!_mismatchPending)return;
-  const{tipo,zona,cp,loc,pkgId}=_mismatchPending;
-  vibrate();
-  registerPackage(tipo,zona,cp,loc,pkgId);
-  _mismatchPending=null;
 }
 
 function registerPackage(tipo,zona,cp,loc,pkgId){
@@ -1879,9 +1849,43 @@ function registerPackage(tipo,zona,cp,loc,pkgId){
   if(_ctm)clearInterval(_ctm);
   _ctm=setInterval(rColectas,1000);
   const tipoLabel=tipo==='flex'?'📦 Flex':'🏠 Particular';
-  toast(`✅ ${tipoLabel} · ${loc||cp||zona} → ${ZL[zona]}`);
-  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;_pendingTipo=null;},2500);
+  toast(`✅ ${tipoLabel} → ${ZL[zona]}`);
+  setTimeout(()=>{_qrCooldown=false;_lastQRId=null;},1800);
   rAll();
+}
+
+// ══════════════════════════
+//  BOTTOM SHEET (paquetes)
+// ══════════════════════════
+let _sheetOpen=false,_shTouchY=0,_shDy=0;
+
+function togglePkgSheet(){
+  _sheetOpen?closePkgSheet():openPkgSheet();
+}
+function openPkgSheet(){
+  _sheetOpen=true;
+  document.getElementById('pkg-sheet').style.transform='translateY(0)';
+  document.getElementById('pkg-sheet-backdrop').style.display='block';
+}
+function closePkgSheet(){
+  _sheetOpen=false;
+  document.getElementById('pkg-sheet').style.transform='translateY(calc(100% - 60px))';
+  document.getElementById('pkg-sheet-backdrop').style.display='none';
+}
+function sheetTouchStart(e){
+  _shTouchY=e.touches[0].clientY;_shDy=0;
+  document.getElementById('pkg-sheet').style.transition='none';
+}
+function sheetTouchMove(e){
+  _shDy=e.touches[0].clientY-_shTouchY;
+  const sheet=document.getElementById('pkg-sheet');
+  if(_sheetOpen&&_shDy>0)sheet.style.transform=`translateY(${_shDy}px)`;
+  if(!_sheetOpen&&_shDy<0)sheet.style.transform=`translateY(calc(100% - 60px + ${_shDy}px))`;
+}
+function sheetTouchEnd(){
+  document.getElementById('pkg-sheet').style.transition='transform .3s cubic-bezier(.22,.61,.36,1)';
+  if(_sheetOpen){_shDy>80?closePkgSheet():openPkgSheet();}
+  else{_shDy<-60?openPkgSheet():closePkgSheet();}
 }
 
 // ══════════════════════════
