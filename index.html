@@ -353,23 +353,23 @@ select.inp{appearance:none}
       </div>
     </div>
 
-    <!-- BOTTOM OVERLAY -->
-    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.92) 28%);padding:0 14px max(80px,calc(env(safe-area-inset-bottom)+76px))">
+    <!-- BOTTOM OVERLAY: anchored just above the nav bar -->
+    <div style="position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.94) 22%);padding:20px 14px 14px">
 
-      <!-- SUMMARY GRID: Flex + Particular by zone -->
+      <!-- SUMMARY GRID: Flex + Particular by zone — compact -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:8px 10px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);margin-bottom:6px">📦 Flex</div>
-          <div id="col-flex-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px"></div>
+        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(245,200,66,.25);border-radius:10px;padding:6px 10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);margin-bottom:4px">📦 Flex</div>
+          <div id="col-flex-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
         </div>
-        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(59,130,246,.25);border-radius:12px;padding:8px 10px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:6px">🏠 Part.</div>
-          <div id="col-part-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:3px"></div>
+        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:6px 10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:4px">🏠 Part.</div>
+          <div id="col-part-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
         </div>
       </div>
 
       <!-- REGISTER BUTTON -->
-      <button id="btn-reg-colecta" class="btn btn-ok" onclick="regColecta()" style="width:100%;padding:14px">
+      <button id="btn-reg-colecta" class="btn btn-ok" onclick="regColecta()" style="width:100%;padding:13px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
         Registrar colecta
       </button>
