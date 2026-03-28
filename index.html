@@ -302,75 +302,71 @@ select.inp{appearance:none}
 <!-- ████ COLECTAS ████ -->
 <div id="s-col" class="scr" style="padding:0;max-width:none;position:relative">
 
-  <!-- FULLSCREEN CAMERA — true full viewport, nav overlaps on top -->
+  <!-- FULLSCREEN CAMERA -->
   <div id="qr-wrap" style="position:fixed;inset:0;z-index:10;background:#000;overflow:hidden">
     <video id="qr-video" style="width:100%;height:100%;object-fit:cover;display:block" playsinline muted></video>
+
+    <!-- Scanline animation -->
     <div id="qr-line" style="position:absolute;left:15%;right:15%;height:2px;background:var(--gold);box-shadow:0 0 10px var(--gold);top:50%;animation:scanline 2s ease-in-out infinite;display:none"></div>
 
-    <!-- QR target box -->
+    <!-- QR target corners — centered, shifted up a bit -->
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
-      <div style="position:relative;width:210px;height:210px;margin-bottom:60px">
-        <div style="position:absolute;top:0;left:0;width:36px;height:36px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:4px 0 0 0"></div>
-        <div style="position:absolute;top:0;right:0;width:36px;height:36px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 4px 0 0"></div>
-        <div style="position:absolute;bottom:0;left:0;width:36px;height:36px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 4px"></div>
-        <div style="position:absolute;bottom:0;right:0;width:36px;height:36px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 4px 0"></div>
+      <div style="position:relative;width:220px;height:220px;margin-bottom:80px">
+        <div style="position:absolute;top:0;left:0;width:38px;height:38px;border-top:3px solid #fff;border-left:3px solid #fff;border-radius:3px 0 0 0;opacity:.85"></div>
+        <div style="position:absolute;top:0;right:0;width:38px;height:38px;border-top:3px solid #fff;border-right:3px solid #fff;border-radius:0 3px 0 0;opacity:.85"></div>
+        <div style="position:absolute;bottom:0;left:0;width:38px;height:38px;border-bottom:3px solid #fff;border-left:3px solid #fff;border-radius:0 0 0 3px;opacity:.85"></div>
+        <div style="position:absolute;bottom:0;right:0;width:38px;height:38px;border-bottom:3px solid #fff;border-right:3px solid #fff;border-radius:0 0 3px 0;opacity:.85"></div>
       </div>
     </div>
 
-    <!-- TOP BAR -->
-    <div style="position:absolute;top:0;left:0;right:0;padding:max(14px,env(safe-area-inset-top)) 16px 18px;background:linear-gradient(rgba(0,0,0,.8) 60%,transparent)">
+    <!-- TOP BAR: minimal -->
+    <div style="position:absolute;top:0;left:0;right:0;padding:max(16px,env(safe-area-inset-top)) 16px 20px;background:linear-gradient(rgba(0,0,0,.72) 55%,transparent)">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <!-- Title + pkg badge -->
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:'Archivo Black',sans-serif;font-size:20px;color:#fff;letter-spacing:-.3px">Colectas</div>
-          <!-- subtle pkg counter badge -->
-          <div id="col-pkg-badge" onclick="openPkgSheet()" style="background:rgba(245,200,66,.18);border:1px solid rgba(245,200,66,.4);border-radius:20px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-            <span id="pkg-toggle-count" style="font-size:12px;font-weight:700;color:var(--gold)">0</span>
-          </div>
-        </div>
-        <!-- Comercio pill + Turbo -->
+
+        <!-- LEFT: pkg count badge -->
+        <button id="col-pkg-badge" onclick="openPkgSheet()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          <span id="pkg-toggle-count" style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9)">0</span>
+        </button>
+
+        <!-- CENTER: comercio -->
+        <button onclick="openComercio()" style="background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:6px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;max-width:140px">
+          <div id="col-comercio-name" style="font-size:12px;font-weight:700;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px">— Comercio —</div>
+        </button>
+
+        <!-- RIGHT: torch + turbo + info -->
         <div style="display:flex;align-items:center;gap:8px">
-          <div onclick="toggleTurbo()" id="turbo-btn" style="background:rgba(0,0,0,.5);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6)">
-            <span id="turbo-icon">⚡</span>
-            <span id="turbo-label">TURBO</span>
-          </div>
-          <div onclick="openComercio()" style="cursor:pointer;background:rgba(0,0,0,.5);border-radius:10px;padding:6px 10px;border:1px solid rgba(255,255,255,.15)">
-            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45)">Comercio</div>
-            <div id="col-comercio-name" style="font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis">— Sel. —</div>
-          </div>
+          <!-- Torch -->
+          <button id="torch-btn" onclick="toggleTorch()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">
+            <svg id="torch-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M8 2h8l-1 7h-6L8 2z"/><path d="M9 9l-3 13h12L15 9"/><line x1="12" y1="13" x2="12" y2="17"/></svg>
+          </button>
+          <!-- Turbo -->
+          <button id="turbo-btn" onclick="toggleTurbo()" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);-webkit-tap-highlight-color:transparent">
+            <span>⚡</span><span id="turbo-label">TURBO</span>
+          </button>
+          <!-- Info -->
+          <button onclick="openInfoSheet()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+          </button>
         </div>
       </div>
-      <!-- status line -->
-      <div id="qr-status" style="margin-top:8px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.4px">Iniciando cámara…</div>
+
+      <!-- status -->
+      <div id="qr-status" style="margin-top:10px;text-align:center;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.3px">Iniciando cámara…</div>
     </div>
 
-    <!-- SCAN ZONE ANNOUNCE (shows briefly after each scan) -->
-    <div id="scan-announce" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) translateY(130px);pointer-events:none">
-      <div id="scan-announce-inner" style="background:rgba(0,0,0,.75);border-radius:16px;padding:10px 22px;text-align:center;border:2px solid rgba(255,255,255,.2)">
-        <div id="scan-announce-tipo" style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.6)"></div>
-        <div id="scan-announce-zona" style="font-family:'Archivo Black',sans-serif;font-size:26px;color:#fff;margin-top:2px"></div>
+    <!-- SCAN ANNOUNCE: brief zone feedback after each scan -->
+    <div id="scan-announce" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) translateY(140px);pointer-events:none;z-index:5">
+      <div style="background:rgba(0,0,0,.8);border-radius:14px;padding:10px 24px;text-align:center;border:1.5px solid rgba(255,255,255,.15);backdrop-filter:blur(6px)">
+        <div id="scan-announce-tipo" style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.5)"></div>
+        <div id="scan-announce-zona" style="font-family:'Archivo Black',sans-serif;font-size:28px;color:#fff;margin-top:1px;letter-spacing:-.5px"></div>
       </div>
     </div>
 
-    <!-- BOTTOM OVERLAY: anchored just above the nav bar -->
-    <div style="position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.94) 22%);padding:20px 14px 14px">
-
-      <!-- SUMMARY GRID: Flex + Particular by zone — compact -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(245,200,66,.25);border-radius:10px;padding:6px 10px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);margin-bottom:4px">📦 Flex</div>
-          <div id="col-flex-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
-        </div>
-        <div style="background:rgba(0,0,0,.55);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:6px 10px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;margin-bottom:4px">🏠 Part.</div>
-          <div id="col-part-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
-        </div>
-      </div>
-
-      <!-- REGISTER BUTTON -->
-      <button id="btn-reg-colecta" class="btn btn-ok" onclick="regColecta()" style="width:100%;padding:13px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+    <!-- BOTTOM: single register button, anchored above nav -->
+    <div style="position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:0;right:0;padding:24px 16px 0;background:linear-gradient(transparent,rgba(0,0,0,.85) 40%)">
+      <button id="btn-reg-colecta" class="btn btn-ok btn-off" onclick="regColecta()" style="width:100%;padding:15px;font-size:15px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
         Registrar colecta
       </button>
     </div>
@@ -379,31 +375,69 @@ select.inp{appearance:none}
     <div id="qr-flash" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:2"></div>
   </div>
 
-  <!-- spacer so the screen isn't empty when fixed camera is on -->
   <div style="height:100vh"></div>
-
 </div>
 
 <!-- ██ PKG LIST BOTTOM SHEET ██ -->
-<div class="ov" id="m-pkg-sheet" style="z-index:250">
-  <div class="modal" style="max-height:80vh">
+<div class="ov" id="m-pkg-sheet" style="z-index:350">
+  <div class="modal" style="max-height:82vh;display:flex;flex-direction:column;padding-bottom:max(20px,env(safe-area-inset-bottom))">
     <div class="m-drag"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:var(--gold)">Paquetes escaneados</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0">
+      <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:var(--gold)">Escaneados hoy</div>
       <div id="pkg-sheet-count" style="font-size:12px;color:var(--t3)"></div>
     </div>
-    <div id="pkg-list" style="overflow-y:auto;max-height:55vh"></div>
-    <button class="btn btn-gh" style="margin-top:12px" onclick="closeM('m-pkg-sheet')">Cerrar</button>
+    <div id="pkg-list" style="overflow-y:auto;flex:1;min-height:0"></div>
+    <button class="btn btn-gh" style="margin-top:14px;flex-shrink:0" onclick="closeM('m-pkg-sheet')">Cerrar</button>
+  </div>
+</div>
+
+<!-- ██ INFO SHEET: desglose por zona ██ -->
+<div class="ov" id="m-info-sheet" style="z-index:350">
+  <div class="modal" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
+    <div class="m-drag"></div>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:var(--gold);margin-bottom:16px">Resumen actual</div>
+    <!-- flex grid -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--t3);margin-bottom:8px">📦 Flex</div>
+      <div id="info-flex-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+    </div>
+    <!-- part grid -->
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--t3);margin-bottom:8px">🏠 Particular</div>
+      <div id="info-part-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+    </div>
+    <!-- totals row -->
+    <div style="background:var(--s2);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:13px;color:var(--t2)">Total pendiente de registrar</span>
+      <span id="info-total" style="font-family:'Archivo Black',sans-serif;font-size:24px;color:var(--gold)">0</span>
+    </div>
+    <button class="btn btn-gh" onclick="closeM('m-info-sheet')">Cerrar</button>
   </div>
 </div>
 
 <!-- ██ COLECTA HISTORY BOTTOM SHEET ██ -->
-<div class="ov" id="m-col-hist" style="z-index:250">
-  <div class="modal" style="max-height:85vh">
+<div class="ov" id="m-col-hist" style="z-index:350">
+  <div class="modal" style="max-height:85vh;display:flex;flex-direction:column;padding-bottom:max(20px,env(safe-area-inset-bottom))">
     <div class="m-drag"></div>
-    <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:var(--gold);margin-bottom:16px">Colectas del día</div>
-    <div id="col-hist" style="overflow-y:auto;max-height:65vh"></div>
-    <button class="btn btn-gh" style="margin-top:12px" onclick="closeM('m-col-hist')">Cerrar</button>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:var(--gold);margin-bottom:16px;flex-shrink:0">Colectas del día</div>
+    <div id="col-hist" style="overflow-y:auto;flex:1;min-height:0"></div>
+    <button class="btn btn-gh" style="margin-top:14px;flex-shrink:0" onclick="closeM('m-col-hist')">Cerrar</button>
+  </div>
+</div>
+
+<!-- ██ CONFIRM COLECTA MODAL ██ -->
+<div class="ov" id="m-confirm-colecta" style="z-index:350">
+  <div class="modal" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
+    <div class="m-drag"></div>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:20px;color:var(--gold);margin-bottom:6px">Confirmar colecta</div>
+    <div id="confirm-colecta-body" style="background:var(--s2);border-radius:12px;padding:14px;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-gh" style="flex:1" onclick="closeM('m-confirm-colecta')">Cancelar</button>
+      <button class="btn btn-ok" style="flex:1" onclick="confirmRegColecta()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+        Confirmar
+      </button>
+    </div>
   </div>
 </div>
 
@@ -966,42 +1000,63 @@ function rNE(){
     </div>`).join('');
 }
 
+// ── TORCH ──
+let _torchOn=false;
+async function toggleTorch(){
+  try{
+    if(!_qrStream)return;
+    const track=_qrStream.getVideoTracks()[0];
+    if(!track)return;
+    _torchOn=!_torchOn;
+    await track.applyConstraints({advanced:[{torch:_torchOn}]});
+    const btn=document.getElementById('torch-btn');
+    if(btn){
+      btn.style.background=_torchOn?'rgba(245,200,66,.35)':'rgba(255,255,255,.1)';
+      btn.style.borderColor=_torchOn?'var(--gold)':'rgba(255,255,255,.2)';
+    }
+    const icon=document.getElementById('torch-icon');
+    if(icon)icon.setAttribute('stroke',_torchOn?'var(--gold)':'rgba(255,255,255,.7)');
+  }catch(e){toast('⚠️ Linterna no disponible en este dispositivo');}
+}
+
+// ── INFO SHEET ──
+function openInfoSheet(){
+  // Flex grid
+  const fg=document.getElementById('info-flex-grid');
+  if(fg)fg.innerHTML=ZS.map(z=>{
+    const v=S.today.cf[z]||0;
+    return`<div style="background:var(--s2);border:1px solid ${v>0?'rgba(245,200,66,.4)':'var(--b1)'};border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:3px">${ZL[z]}</div>
+      <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:${v>0?'var(--gold)':'var(--t3)'}">${v}</div>
+    </div>`;
+  }).join('');
+  // Part grid
+  const pg=document.getElementById('info-part-grid');
+  if(pg)pg.innerHTML=ZS.map(z=>{
+    const v=S.today.cp[z]||0;
+    return`<div style="background:var(--s2);border:1px solid ${v>0?'rgba(59,130,246,.4)':'var(--b1)'};border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:3px">${ZL[z]}</div>
+      <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:${v>0?'#3b82f6':'var(--t3)'}">${v}</div>
+    </div>`;
+  }).join('');
+  const tot=curCT();
+  const el=document.getElementById('info-total');
+  if(el)el.textContent=tot;
+  openM('m-info-sheet');
+}
+
 // ── COLECTAS ──
 function rColectas(){
   // comercio badge
   const cn=document.getElementById('col-comercio-name');
-  if(cn)cn.textContent=S.comercioActual||'— Sel. —';
+  if(cn)cn.textContent=S.comercioActual||'— Comercio —';
 
   // pkg count badge
   const pkgs=S.today.pkgs||[];
   const badge=document.getElementById('pkg-toggle-count');
   if(badge)badge.textContent=pkgs.length;
   const pkgBadge=document.getElementById('col-pkg-badge');
-  if(pkgBadge)pkgBadge.style.display=pkgs.length>0?'flex':'none';
-
-  // Flex mini grid
-  const flexGrid=document.getElementById('col-flex-grid');
-  if(flexGrid){
-    flexGrid.innerHTML=ZS.map(z=>{
-      const v=S.today.cf[z]||0;
-      return`<div style="text-align:center;padding:2px 0">
-        <div style="font-size:9px;font-weight:700;color:rgba(245,200,66,${v>0?'.8':'.3'})">${ZL[z]}</div>
-        <div style="font-family:'Archivo Black',sans-serif;font-size:17px;color:${v>0?'var(--gold)':'rgba(255,255,255,.15)'}">${v}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // Particular mini grid
-  const partGrid=document.getElementById('col-part-grid');
-  if(partGrid){
-    partGrid.innerHTML=ZS.map(z=>{
-      const v=S.today.cp[z]||0;
-      return`<div style="text-align:center;padding:2px 0">
-        <div style="font-size:9px;font-weight:700;color:${v>0?'rgba(59,130,246,.9)':'rgba(59,130,246,.25)'}">${ZL[z]}</div>
-        <div style="font-family:'Archivo Black',sans-serif;font-size:17px;color:${v>0?'#3b82f6':'rgba(255,255,255,.15)'}">${v}</div>
-      </div>`;
-    }).join('');
-  }
+  if(pkgBadge)pkgBadge.style.opacity=pkgs.length>0?'1':'0.5';
 
   // Register button state
   const tot=curCT();
@@ -1276,6 +1331,24 @@ function regColecta(){
   const tp=ZS.reduce((a,z)=>a+S.today.cp[z],0);
   const total=tf+tp;
   if(total===0){toast('⚠️ No hay paquetes en los contadores');return}
+
+  // Build summary for confirmation
+  const lines=[];
+  ZS.forEach(z=>{if(S.today.cf[z]>0)lines.push(`<div class="smr"><span>📦 Flex · ${ZL[z]}</span><span>${S.today.cf[z]} pkds</span></div>`)});
+  ZS.forEach(z=>{if(S.today.cp[z]>0)lines.push(`<div class="smr"><span>🏠 Part. · ${ZL[z]}</span><span>${S.today.cp[z]} pkds</span></div>`)});
+  document.getElementById('confirm-colecta-body').innerHTML=
+    lines.join('')+
+    `<div class="smr-tot"><span>Total</span><span>${total} paquetes</span></div>
+     <div style="text-align:center;font-size:12px;color:var(--t3);margin-top:4px">+$10.000 por esta colecta</div>`;
+  openM('m-confirm-colecta');
+}
+
+function confirmRegColecta(){
+  closeM('m-confirm-colecta');
+  const tf=ZS.reduce((a,z)=>a+S.today.cf[z],0);
+  const tp=ZS.reduce((a,z)=>a+S.today.cp[z],0);
+  const total=tf+tp;
+  if(total===0)return;
   const num=S.today.cols.length+1;
   S.today.cols.push({
     num,total,flex:tf,part:tp,hora:tnow(),
@@ -1286,7 +1359,6 @@ function regColecta(){
   if(_ctm){clearInterval(_ctm);_ctm=null}
   toast(`✅ Colecta #${num} guardada · +$10.000`);
   rAll();
-  // Open history sheet to show summary
   setTimeout(()=>{ rColHist(); openM('m-col-hist'); }, 150);
 }
 
@@ -1768,6 +1840,11 @@ function stopQR(){
   const line=document.getElementById('qr-line');
   if(line) line.style.display='none';
   _pendingPkgId=null;_pendingTipo=null;
+  _torchOn=false;
+  const btn=document.getElementById('torch-btn');
+  if(btn){btn.style.background='rgba(255,255,255,.1)';btn.style.borderColor='rgba(255,255,255,.2)';}
+  const icon=document.getElementById('torch-icon');
+  if(icon)icon.setAttribute('stroke','rgba(255,255,255,.7)');
 }
 
 function flashDetected(color){
@@ -1875,6 +1952,7 @@ function pickZona(zona){
 function cancelZona(){
   closeM('m-zona');
   _pendingPkgId=null;_pendingTipo=null;
+  _pendingBultos=1;_pendingBultosTotal=1;
   _qrCooldown=false;_lastQRId=null;
   setStatus('📷 Apuntá al QR del paquete');
 }
@@ -1969,7 +2047,12 @@ function go(id){
 function openM(id){document.getElementById(id).classList.add('on')}
 function closeM(id){document.getElementById(id).classList.remove('on')}
 document.querySelectorAll('.ov').forEach(o=>
-  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on')}));
+  o.addEventListener('click',e=>{
+    if(e.target===o){
+      o.classList.remove('on');
+      if(o.id==='m-zona') cancelZona();
+    }
+  }));
 
 function toast(msg){
   const el=document.getElementById('toast');
